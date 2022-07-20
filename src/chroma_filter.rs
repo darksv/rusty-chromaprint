@@ -46,3 +46,99 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for ChromaFilter<C> {
         self.buffer_offset = 0;
     }
 }
+
+struct Image {
+    columns: usize,
+    data: Vec<f64>,
+}
+
+impl Image {
+    fn new(columns: usize) -> Self {
+        Self {
+            columns,
+            data: vec![],
+        }
+    }
+
+    fn columns(&self) -> usize {
+        self.columns
+    }
+
+    fn rows(&self) -> usize {
+        self.data.len() / self.columns
+    }
+
+    fn get(&self, row: usize, col: usize) -> f64 {
+        self.data[row * self.columns + col]
+    }
+}
+
+impl FeatureVectorConsumer for Image {
+    fn consume(&mut self, features: &[f64]) {
+        self.data.extend_from_slice(features);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::assert_eq_float;
+    use crate::chroma::FeatureVectorConsumer;
+    use crate::chroma_filter::{ChromaFilter, Image};
+
+    #[test]
+    fn blur2() {
+        let coefficients = [0.5, 0.5];
+        let mut image = Image::new(12);
+        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        filter.consume(&d1);
+        filter.consume(&d2);
+        filter.consume(&d3);
+        assert_eq!(2, image.rows());
+        assert_eq!(0.5, image.get(0, 0));
+        assert_eq!(1.5, image.get(1, 0));
+        assert_eq!(5.5, image.get(0, 1));
+        assert_eq!(6.5, image.get(1, 1));
+    }
+
+
+    #[test]
+    fn blur3() {
+        let coefficients = [0.5, 0.7, 0.5];
+        let mut image = Image::new(12);
+        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d4 = [3.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        filter.consume(&d1);
+        filter.consume(&d2);
+        filter.consume(&d3);
+        filter.consume(&d4);
+        assert_eq!(2, image.rows());
+        assert_eq_float!(1.7, image.get(0,0));
+        assert_eq_float!(3.399999999999999,  image.get(1, 0));
+        assert_eq_float!(10.199999999999999, image.get(0, 1));
+        assert_eq_float!(11.899999999999999, image.get(1, 1));
+    }
+
+    #[test]
+    fn diff() {
+        let coefficients = [1.0, -1.0];
+        let mut image = Image::new(12);
+        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        filter.consume(&d1);
+        filter.consume(&d2);
+        filter.consume(&d3);
+        assert_eq!(2, image.rows());
+        assert_eq!(-1.0, image.get(0, 0));
+        assert_eq!(-1.0, image.get(1, 0));
+        assert_eq!(-1.0, image.get(0, 1));
+        assert_eq!(-1.0, image.get(1, 1));
+    }
+}

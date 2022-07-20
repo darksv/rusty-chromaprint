@@ -104,6 +104,15 @@ impl<C: FeatureVectorConsumer + ?Sized> FeatureVectorConsumer for Rc<RefCell<C>>
     }
 }
 
+impl<C: FeatureVectorConsumer + ?Sized> FeatureVectorConsumer for &mut C {
+    fn consume(&mut self, features: &[f64]) {
+        (**self).consume(features);
+    }
+    fn reset(&mut self) {
+        (**self).reset();
+    }
+}
+
 struct FeatureVectorBuffer {
     features: Vec<f64>,
 }
