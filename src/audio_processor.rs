@@ -17,7 +17,7 @@ impl<C: AudioConsumer + ?Sized> AudioConsumer for Box<C> {
 }
 
 pub struct AudioProcessor<C: AudioConsumer> {
-    buffer: Vec<i16>,
+    buffer: Box<[i16]>,
     buffer_offset: usize,
     channels: u32,
     consumer: C,
@@ -28,7 +28,7 @@ pub struct AudioProcessor<C: AudioConsumer> {
 impl<C: AudioConsumer> AudioProcessor<C> {
     pub(crate) fn new(sample_rate: u32, consumer: C) -> Self {
         Self {
-            buffer: vec![0; MAX_BUFFER_SIZE],
+            buffer: vec![0; MAX_BUFFER_SIZE].into_boxed_slice(),
             buffer_offset: 0,
             channels: 0,
             consumer,
@@ -37,48 +37,41 @@ impl<C: AudioConsumer> AudioProcessor<C> {
         }
     }
 
-    fn load_mono(&mut self, input: &[i16]) {
-        for sample in input.iter().copied() {
-            self.push_sample(sample);
-        }
-    }
-
-    fn load_stereo(&mut self, input: &[i16]) {
-        for sample in input.chunks_exact(2) {
-            self.push_sample((((sample[0] as i32) + (sample[1] as i32)) / 2) as i16);
-        }
-    }
-
-    fn load_multi_channel(&mut self, input: &[i16]) {
-        for sample in input.chunks_exact(self.channels as usize) {
-            self.push_sample((sample.iter()
-                .copied()
-                .map(|v| v as i32)
-                .sum::<i32>() / sample.len() as i32) as i16
-            );
-        }
-    }
-
-    fn load(&mut self, input: &[i16]) -> usize {
+    fn load(&mut self, input: &[i16], channels: usize) -> usize {
         assert!(self.buffer_offset <= self.buffer.len());
-        assert_eq!(input.len() % self.channels as usize, 0);
+        assert_eq!(input.len() % channels, 0);
 
-        let available_samples = input.len() / self.channels as usize;
-        let max_samples = available_samples.min(self.available_space());
-        let input = &input[..max_samples * self.channels as usize];
+        let available_samples = input.len() / channels;
+        let consumed = available_samples.min(self.available_space());
+        let input = &input[..consumed * channels];
 
-        match self.channels {
-            1 => self.load_mono(input),
-            2 => self.load_stereo(input),
-            _ => self.load_multi_channel(input),
+        match channels {
+            1 => {
+                for sample in input.iter().copied() {
+                    self.push_sample(sample);
+                }
+            },
+            2 => {
+                for sample in input.chunks_exact(2) {
+                    self.push_sample(((i32::from(sample[0]) + i32::from(sample[1])) / 2) as i16);
+                }
+            },
+            _ => {
+                for sample in input.chunks_exact(channels) {
+                    let sum: i32 = sample.iter().copied().map(i32::from).sum();
+                    let samples: i32 = sample.len().try_into().unwrap();
+                    let average: i32 = sum / samples;
+                    self.push_sample(average.try_into().unwrap());
+                }
+            },
         }
 
-        max_samples
+        consumed * channels
     }
 
     fn resample(&mut self) -> Result<(), ()> {
         if let Some(_resampler) = self.resampler.as_mut() {
-            todo!();
+            todo!()
         } else {
             self.consumer.consume(&self.buffer[..self.buffer_offset]);
             self.buffer_offset = 0;
@@ -137,8 +130,7 @@ impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
 
         let mut index = 0;
         while index < data.len() {
-            let consumed = self.load(&data[index..]);
-            index += consumed * self.channels as usize;
+            index += self.load(&data[index..], self.channels as usize);
             if self.buffer.len() == self.buffer_offset {
                 // Full buffer
                 self.resample().unwrap();
@@ -156,7 +148,7 @@ pub(crate) enum ResetError {
 
 #[cfg(test)]
 mod tests {
-    use crate::audio_processor::{AudioBuffer, AudioConsumer, AudioProcessor};
+    use crate::audio_processor::{AudioConsumer, AudioProcessor};
     use crate::read_s16le;
 
     #[test]
@@ -182,26 +174,26 @@ mod tests {
         let buffer = processor.into_consumer();
         assert_eq!(buffer.data, data1);
     }
-}
 
-struct AudioBuffer {
-    data: Vec<i16>,
-}
+    struct AudioBuffer {
+        data: Vec<i16>,
+    }
 
-impl AudioBuffer {
-    fn new() -> Self {
-        Self {
-            data: Vec::new(),
+    impl AudioBuffer {
+        fn new() -> Self {
+            Self {
+                data: Vec::new(),
+            }
         }
     }
-}
 
-impl AudioConsumer for AudioBuffer {
-    fn reset(&mut self) {
-        self.data.clear();
-    }
+    impl AudioConsumer for AudioBuffer {
+        fn reset(&mut self) {
+            self.data.clear();
+        }
 
-    fn consume(&mut self, data: &[i16]) {
-        self.data.extend_from_slice(data);
+        fn consume(&mut self, data: &[i16]) {
+            self.data.extend_from_slice(data);
+        }
     }
 }
