@@ -1,26 +1,33 @@
 pub struct Filter {
-    r#type: u32,
+    kind: FilterKind,
     y: usize,
     height: usize,
     width: usize,
 }
 
+pub enum FilterKind {
+    Filter0,
+    Filter1,
+    Filter2,
+    Filter3,
+    Filter4,
+    Filter5,
+}
+
 impl Filter {
-    pub(crate) const fn new(r#type: u32, y: usize, height: usize, width: usize) -> Self {
-        Self { r#type, y, height, width }
+    pub(crate) const fn new(kind: FilterKind, y: usize, height: usize, width: usize) -> Self {
+        Self { kind, y, height, width }
     }
 
     pub(crate) fn apply(&self, image: &impl Image, x: usize) -> f64 {
-        let filter = match self.r#type {
-            0 => filter0,
-            1 => filter1,
-            2 => filter2,
-            3 => filter3,
-            4 => filter4,
-            5 => filter5,
-            _ => return 0.0,
+        let filter = match self.kind {
+            FilterKind::Filter0 => filter0,
+            FilterKind::Filter1 => filter1,
+            FilterKind::Filter2 => filter2,
+            FilterKind::Filter3 => filter3,
+            FilterKind::Filter4 => filter4,
+            FilterKind::Filter5 => filter5,
         };
-        dbg!(self.r#type);
         return filter(image, x, self.y, self.width, self.height, subtract_log);
     }
 
@@ -29,18 +36,15 @@ impl Filter {
     }
 }
 
-
 fn subtract(a: f64, b: f64) -> f64 {
     return a - b;
 }
 
 fn subtract_log(a: f64, b: f64) -> f64 {
-    dbg!(a,b);
     let r = f64::ln((1.0 + a) / (1.0 + b));
     assert!(!r.is_nan());
     return r;
 }
-
 
 pub trait Image {
     fn area(&self, x: usize, y: usize, w: usize, h: usize) -> f64;
@@ -151,7 +155,7 @@ fn filter5(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::filter::{filter0, filter1, filter2, filter3, filter4, filter5, subtract, subtract_log};
+    use crate::filter::{Filter, filter0, filter1, filter2, filter3, filter4, filter5, FilterKind, subtract, subtract_log};
     use crate::rolling_image::RollingIntegralImage;
 
     #[test]
@@ -164,6 +168,18 @@ mod tests {
     fn test_compare_subtract_log() {
         let res = subtract_log(2.0, 1.0);
         assert_eq_float!(0.4054651, res);
+    }
+
+    #[test]
+    fn test_filter_with_filter0() {
+        let data = [
+            0.0, 1.0,
+            2.0, 3.0,
+        ];
+        let mut integral_image = RollingIntegralImage::from_data(2, &data);
+        let flt1 = Filter::new(FilterKind::Filter0, 0, 1, 1);
+        assert_eq_float!(0.0, flt1.apply(&mut integral_image, 0));
+        assert_eq_float!(1.0986123, flt1.apply(&mut integral_image, 1));
     }
 
     #[test]
