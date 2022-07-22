@@ -12,9 +12,9 @@ pub struct Fft<C: FeatureVectorConsumer> {
     frame_size: usize,
     frame_overlap: usize,
 
-    plan: Arc<dyn rustfft::Fft<f64>>,
+    fft_plan: Arc<dyn rustfft::Fft<f64>>,
     fft_buffer_complex: Box<[Complex64]>,
-    fft_buffer_real: Vec<f64>,
+    fft_frame: Box<[f64]>,
     fft_scratch: Box<[Complex64]>,
 
     window: Box<[f64]>,
@@ -23,17 +23,16 @@ pub struct Fft<C: FeatureVectorConsumer> {
 
 impl<C: FeatureVectorConsumer> Fft<C> {
     pub(crate) fn new(frame_size: usize, frame_overlap: usize, consumer: C) -> Self {
-        let plan = rustfft::FftPlanner::new()
-            .plan_fft(frame_size, rustfft::FftDirection::Forward);
+        let fft_plan = rustfft::FftPlanner::new().plan_fft_forward(frame_size);
 
         Self {
             consumer,
             frame_size,
             frame_overlap,
             fft_buffer_complex: vec![Complex64::zero(); frame_size].into_boxed_slice(),
-            fft_scratch: vec![Complex::zero(); plan.get_inplace_scratch_len()].into_boxed_slice(),
-            fft_buffer_real: Vec::new(),
-            plan,
+            fft_scratch: vec![Complex::zero(); fft_plan.get_inplace_scratch_len()].into_boxed_slice(),
+            fft_frame: vec![0.0; 1 + frame_size / 2].into_boxed_slice(),
+            fft_plan,
             window: make_hamming_window(frame_size, 1.0 / f64::from(i16::MAX)),
             ring_buf: VecDeque::new(),
         }
@@ -51,17 +50,24 @@ impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
         while self.ring_buf.len() >= self.frame_size {
             let window = self.ring_buf.iter().copied().take(self.frame_size);
 
+            assert_eq!(self.fft_buffer_complex.len(), self.frame_size);
+            assert_eq!(self.window.len(), self.frame_size);
+
             for (i, (output, input))
             in self.fft_buffer_complex.iter_mut().zip(window).enumerate() {
                 output.re = f64::from(input) * self.window[i];
                 output.im = 0.0;
             }
 
-            self.plan.process_with_scratch(&mut self.fft_buffer_complex, &mut self.fft_scratch);
+            self.fft_plan.process_with_scratch(&mut self.fft_buffer_complex, &mut self.fft_scratch);
 
-            self.fft_buffer_real.clear();
-            self.fft_buffer_real.extend(self.fft_buffer_complex.iter().map(|c| c.re));
-            self.consumer.consume(&self.fft_buffer_real);
+            self.fft_frame[0] = self.fft_buffer_complex[0].re.powi(2);
+            self.fft_frame[self.frame_size / 2] = self.fft_buffer_complex[1].re.powi(2);
+            for i in 1..self.frame_size / 2 {
+                self.fft_frame[i] = self.fft_buffer_complex[i].norm_sqr();
+            }
+
+            self.consumer.consume(&self.fft_frame);
             self.ring_buf.drain(..self.frame_size - self.frame_overlap);
         }
     }
