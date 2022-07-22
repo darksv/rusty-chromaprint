@@ -18,7 +18,7 @@ impl RollingIntegralImage {
     }
 
     pub fn from_data<D>(columns: usize, data: &[D]) -> Self
-        where D: Copy + TryInto<f64>
+        where D: Copy + Into<f64>
     {
         let mut image = Self {
             max_rows: data.len() / columns,
@@ -34,7 +34,7 @@ impl RollingIntegralImage {
         image
     }
 
-    pub(crate) fn add_row<T>(&mut self, row: &[T]) where T: Copy + TryInto<f64> {
+    pub(crate) fn add_row<T>(&mut self, row: &[T]) where T: Copy + Into<f64> {
         if self.columns == 0 {
             self.columns = row.len();
             self.data.resize(self.max_rows * self.columns, 0.0);
@@ -44,7 +44,7 @@ impl RollingIntegralImage {
 
         let mut sum = 0.0;
         for i in 0..self.columns {
-            sum += row[i].try_into().map_err(drop).unwrap();
+            sum += row[i].into();
             self.row_mut(self.rows)[i] = sum;
         }
 

@@ -1,7 +1,7 @@
 use crate::chroma::FeatureVectorConsumer;
 
 pub struct ChromaFilter<C: FeatureVectorConsumer> {
-    coefficients: Vec<f64>,
+    coefficients: Box<[f64]>,
     consumer: C,
     buffer: [[f64; 12]; 8],
     result: [f64; 12],
@@ -10,9 +10,9 @@ pub struct ChromaFilter<C: FeatureVectorConsumer> {
 }
 
 impl<C: FeatureVectorConsumer> ChromaFilter<C> {
-    pub(crate) fn new(coefficients: Vec<f64>, consumer: C) -> Self {
+    pub(crate) fn new(coefficients: Box<[f64]>, consumer: C) -> Self {
         Self {
-            coefficients: coefficients.to_vec(),
+            coefficients,
             consumer,
             buffer: std::array::from_fn(|_| [0.0; 12]),
             result: [0.0; 12],
@@ -25,9 +25,9 @@ impl<C: FeatureVectorConsumer> ChromaFilter<C> {
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for ChromaFilter<C> {
     fn consume(&mut self, features: &[f64]) {
         self.buffer[self.buffer_offset].copy_from_slice(features);
-        self.buffer_offset = (self.buffer_offset + 1) % 8;
+        self.buffer_offset = (self.buffer_offset + 1) % self.buffer.len();
         if self.buffer_size >= self.coefficients.len() {
-            let offset = (self.buffer_offset + 8 - self.coefficients.len()) % 8;
+            let offset = (self.buffer_offset + self.buffer.len() - self.coefficients.len()) % self.buffer.len();
             self.result.fill(0.0);
             for i in 0..self.result.len() {
                 for j in 0..self.coefficients.len() {
@@ -89,7 +89,7 @@ mod tests {
     fn blur2() {
         let coefficients = [0.5, 0.5];
         let mut image = Image::new(12);
-        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let mut filter = ChromaFilter::new(coefficients.into(), &mut image);
         let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
@@ -108,7 +108,7 @@ mod tests {
     fn blur3() {
         let coefficients = [0.5, 0.7, 0.5];
         let mut image = Image::new(12);
-        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let mut filter = ChromaFilter::new(coefficients.into(), &mut image);
         let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
@@ -128,7 +128,7 @@ mod tests {
     fn diff() {
         let coefficients = [1.0, -1.0];
         let mut image = Image::new(12);
-        let mut filter = ChromaFilter::new(coefficients.to_vec(), &mut image);
+        let mut filter = ChromaFilter::new(coefficients.into(), &mut image);
         let d1 = [0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d2 = [1.0, 6.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         let d3 = [2.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];

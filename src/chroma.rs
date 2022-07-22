@@ -42,12 +42,10 @@ impl<C: FeatureVectorConsumer> Chroma<C> {
         }
     }
 
-
     fn into_consumer(self) -> C {
         self.consumer
     }
 }
-
 
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     fn consume(&mut self, frame: &[f64]) {
