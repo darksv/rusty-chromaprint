@@ -26,7 +26,7 @@ impl FingerprintCalculator {
     fn calculate_subfingerprint(&self, offset: usize) -> u32 {
         let mut bits = 0u32;
         for classifier in &self.classifiers {
-            bits = (bits << 4) | gray_code(classifier.classify(&self.image, offset));
+            bits = (bits << 2) | gray_code(classifier.classify(&self.image, offset));
         }
         return bits;
     }
