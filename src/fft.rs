@@ -62,7 +62,7 @@ impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
             self.fft_plan.process_with_scratch(&mut self.fft_buffer_complex, &mut self.fft_scratch);
 
             self.fft_frame[0] = self.fft_buffer_complex[0].re.powi(2);
-            self.fft_frame[self.frame_size / 2] = self.fft_buffer_complex[1].re.powi(2);
+            self.fft_frame[self.frame_size / 2] = self.fft_buffer_complex[0].im.powi(2);
             for i in 1..self.frame_size / 2 {
                 self.fft_frame[i] = self.fft_buffer_complex[i].norm_sqr();
             }
