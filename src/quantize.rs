@@ -32,7 +32,7 @@ mod tests {
     use crate::quantize::Quantizer;
 
     #[test]
-    fn quantize_test() {
+    fn quantization() {
         let q = Quantizer::new(0.0, 0.1, 0.3);
         assert_eq!(0, q.quantize(-0.1));
         assert_eq!(1, q.quantize(0.0));

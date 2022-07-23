@@ -9,41 +9,39 @@ pub enum MatchError {
 }
 
 const ALIGN_BITS: u32 = 12;
+const HASH_SHIFT: u32 = 32 - ALIGN_BITS;
+const HASH_MASK: u32 = ((1 << ALIGN_BITS) - 1) << HASH_SHIFT;
+const OFFSET_MASK: u32 = (1 << (32 - ALIGN_BITS - 1)) - 1;
+const SOURCE_MASK: u32 = 1 << (32 - ALIGN_BITS - 1);
 
 fn align_strip(x: u32) -> u32 {
     x >> (32 - ALIGN_BITS)
 }
 
 pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Config) -> Result<Vec<Segment>, MatchError> {
-    let hash_shift = 32 - ALIGN_BITS;
-    let hash_mask: u32 = ((1 << ALIGN_BITS) - 1) << hash_shift;
-    let offset_mask: u32 = (1 << (32 - ALIGN_BITS - 1)) - 1;
-    let source_mask: u32 = 1 << (32 - ALIGN_BITS - 1);
-
-    if fp1.len() + 1 >= offset_mask as usize {
+    if fp1.len() + 1 >= OFFSET_MASK as usize {
         return Err(MatchError::FingerprintTooLong { index: 0 });
     }
 
-    if fp2.len() + 1 >= offset_mask as usize {
+    if fp2.len() + 1 >= OFFSET_MASK as usize {
         return Err(MatchError::FingerprintTooLong { index: 1 });
     }
 
-
     let mut offsets = Vec::with_capacity(fp1.len() + fp2.len());
     for i in 0..fp1.len() {
-        offsets.push((align_strip(fp1[i]) << hash_shift) | (i as u32 & offset_mask));
+        offsets.push((align_strip(fp1[i]) << HASH_SHIFT) | (i as u32));
     }
 
     for i in 0..fp2.len() {
-        offsets.push((align_strip(fp2[i]) << hash_shift) | (i as u32 & offset_mask) | source_mask);
+        offsets.push((align_strip(fp2[i]) << HASH_SHIFT) | (i as u32) | SOURCE_MASK);
     }
     offsets.sort_unstable();
 
-    let mut histogram = vec![0; fp1.len() + fp2.len()];
+    let mut histogram = vec![0u32; fp1.len() + fp2.len()];
     for offset_idx in 0..offsets.len() {
-        let hash = offsets[offset_idx] & hash_mask;
-        let offset1 = offsets[offset_idx] & offset_mask;
-        let source1 = offsets[offset_idx] & source_mask;
+        let hash1 = offsets[offset_idx] & HASH_MASK;
+        let offset1 = offsets[offset_idx] & OFFSET_MASK;
+        let source1 = offsets[offset_idx] & SOURCE_MASK;
         if source1 != 0 {
             // if we got hash from fp2, it means there is no hash from fp1,
             // because if there was, it would be first
@@ -51,13 +49,13 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Config) -> Result<
         }
 
         for offset_idx2 in offset_idx + 1..offsets.len() {
-            let hash2 = offsets[offset_idx2] & hash_mask;
-            if hash != hash2 {
+            let hash2 = offsets[offset_idx2] & HASH_MASK;
+            if hash1 != hash2 {
                 break;
             }
 
-            let offset2 = offsets[offset_idx2] & offset_mask;
-            let source2 = offsets[offset_idx2] & source_mask;
+            let offset2 = offsets[offset_idx2] & OFFSET_MASK;
+            let source2 = offsets[offset_idx2] & SOURCE_MASK;
             if source2 != 0 {
                 let offset_diff = offset1 as usize + fp2.len() - offset2 as usize;
                 histogram[offset_diff] += 1;

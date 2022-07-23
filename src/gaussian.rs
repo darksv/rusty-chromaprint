@@ -9,17 +9,14 @@ pub fn gaussian_filter<'a>(mut input: &'a mut [f64], mut output: &'a mut [f64], 
     let mut data1 = &mut input;
     let mut data2 = &mut output;
 
-    let mut i = 0;
-    while i < m {
+    for _ in 0..m {
         box_filter(*data1, *data2, wl);
         std::mem::swap(&mut data1, &mut data2);
-        i += 1;
     }
 
-    while i < n {
+    for _ in m..n {
         box_filter(*data1, *data2, wu);
         std::mem::swap(&mut data1, &mut data2);
-        i += 1;
     }
 
     if data1.as_ptr() != output.as_ptr() {
@@ -36,7 +33,6 @@ fn box_filter(input: &[f64], output: &mut [f64], w: usize) {
 
     let wl = w / 2;
     let wr = w - wl;
-
 
     let mut it1 = ReflectIterator::new(size);
     let mut it2 = ReflectIterator::new(size);
