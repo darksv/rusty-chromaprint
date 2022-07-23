@@ -1,0 +1,7 @@
+[package]
+name = "rusty-chromaprint"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustfft = "6.0.1"

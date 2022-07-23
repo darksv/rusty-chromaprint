@@ -140,7 +140,7 @@ impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
 }
 
 #[derive(Debug)]
-pub(crate) enum ResetError {
+pub enum ResetError {
     SampleRateTooLow,
     NoChannels,
     CannotResample,
@@ -150,6 +150,7 @@ pub(crate) enum ResetError {
 mod tests {
     use crate::audio_processor::{AudioConsumer, AudioProcessor};
     use crate::read_s16le;
+    use crate::utils::read_s16le;
 
     #[test]
     fn pass_through() {

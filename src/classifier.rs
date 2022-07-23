@@ -16,7 +16,7 @@ impl Classifier {
         self.quantizer.quantize(value)
     }
 
-    pub fn filter(&self) -> &Filter {
+    pub(crate) fn filter(&self) -> &Filter {
         &self.filter
     }
 }

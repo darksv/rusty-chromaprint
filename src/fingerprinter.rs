@@ -11,7 +11,8 @@ use crate::filter::{Filter, FilterKind};
 use crate::fingerprint_calculator::FingerprintCalculator;
 use crate::quantize::Quantizer;
 
-pub struct Config {
+/// Structure containing configuration for a [Fingerprinter].
+pub struct Configuration {
     classifiers: Vec<Classifier>,
     remove_silence: bool,
     silence_threshold: u32,
@@ -22,7 +23,8 @@ pub struct Config {
     interpolate: bool,
 }
 
-impl Config {
+impl Configuration {
+    /// Creates a new default configuration.
     fn new() -> Self {
         Self {
             classifiers: Vec::new(),
@@ -36,7 +38,8 @@ impl Config {
         }
     }
 
-    fn with_classifiers(mut self, classifiers: Vec<Classifier>) -> Self {
+    /// Adds classifiers to the configuration.
+    pub fn with_classifiers(mut self, classifiers: Vec<Classifier>) -> Self {
         self.max_filter_width = classifiers.iter()
             .map(|c| c.filter().width())
             .max()
@@ -45,27 +48,32 @@ impl Config {
         self
     }
 
-    fn with_coefficients(mut self, coefficients: Vec<f64>) -> Self {
+    /// Updates coefficients for internal chroma filter.
+    pub fn with_coefficients(mut self, coefficients: Vec<f64>) -> Self {
         self.filter_coefficients = coefficients;
         self
     }
 
-    fn with_interpolation(mut self, interpolate: bool) -> Self {
+    /// Enables or disables interpolation.
+    pub fn with_interpolation(mut self, interpolate: bool) -> Self {
         self.interpolate = interpolate;
         self
     }
 
-    fn with_frame_size(mut self, frame_size: usize) -> Self {
+    /// Sets number of samples in a single frame for FFT.
+    pub fn with_frame_size(mut self, frame_size: usize) -> Self {
         self.frame_size = frame_size;
         self
     }
 
-    fn with_frame_overlap(mut self, frame_overlap: usize) -> Self {
+    /// Sets number of samples overlapping between two consecutive frames for FFT.
+    pub fn with_frame_overlap(mut self, frame_overlap: usize) -> Self {
         self.frame_overlap = frame_overlap;
         self
     }
 
-    fn with_removed_silence(mut self, silence_threshold: u32) -> Self {
+    /// Enables removal of silence with a specified threshold.
+    pub fn with_removed_silence(mut self, silence_threshold: u32) -> Self {
         self.remove_silence = true;
         self.silence_threshold = silence_threshold;
         self
@@ -83,7 +91,6 @@ impl Config {
         self.item_duration() as f64 / self.sample_rate() as f64
     }
 
-    #[allow(unused)]
     pub fn preset_test1() -> Self {
         Self::new()
             .with_classifiers(CLASSIFIER_TEST1.into())
@@ -93,7 +100,6 @@ impl Config {
             .with_frame_overlap(DEFAULT_FRAME_OVERLAP)
     }
 
-    #[allow(unused)]
     pub fn preset_test2() -> Self {
         Self::new()
             .with_classifiers(CLASSIFIER_TEST2.into())
@@ -103,7 +109,6 @@ impl Config {
             .with_frame_overlap(DEFAULT_FRAME_OVERLAP)
     }
 
-    #[allow(unused)]
     pub fn preset_test3() -> Self {
         Self::new()
             .with_classifiers(CLASSIFIER_TEST3.into())
@@ -113,13 +118,11 @@ impl Config {
             .with_frame_overlap(DEFAULT_FRAME_OVERLAP)
     }
 
-    #[allow(unused)]
     pub fn preset_test4() -> Self {
         Self::new()
             .with_removed_silence(50)
     }
 
-    #[allow(unused)]
     pub fn preset_test5() -> Self {
         Self::new()
             .with_frame_size(DEFAULT_FRAME_SIZE / 2)
@@ -127,21 +130,20 @@ impl Config {
     }
 }
 
-
 const MIN_FREQ: u32 = 28;
 const MAX_FREQ: u32 = 3520;
 
 const DEFAULT_SAMPLE_RATE: u32 = 11025;
 
-
+/// Calculates a fingerprint for a given audio samples.
 pub struct Fingerprinter {
     processor: AudioProcessor<Box<dyn AudioConsumer>>,
     calculator: Rc<RefCell<FingerprintCalculator>>,
 }
 
 impl Fingerprinter {
-    pub fn new() -> Self {
-        let config = Config::preset_test1();
+    /// Creates a new [Fingerprinter] with the given [Configuration].
+    pub fn new(config: Configuration) -> Self {
         let calculator = Rc::new(RefCell::new(FingerprintCalculator::new(config.classifiers)));
         let normalizer = ChromaNormalizer::new(calculator.clone());
         let filter = ChromaFilter::new(config.filter_coefficients.into_boxed_slice(), normalizer);
@@ -160,20 +162,24 @@ impl Fingerprinter {
         }
     }
 
-    pub(crate) fn start(&mut self, sample_rate: u32, channels: u32) -> Result<(), ResetError> {
+    /// Resets the internal state to allow for a new fingerprint calculation.
+    pub fn start(&mut self, sample_rate: u32, channels: u32) -> Result<(), ResetError> {
         self.processor.reset(sample_rate, channels)?;
         Ok(())
     }
 
-    pub(crate) fn consume(&mut self, data: &[i16]) {
+    /// Adds a new chunk of samples to the current calculation.
+    pub fn consume(&mut self, data: &[i16]) {
         self.processor.consume(data)
     }
 
-    pub(crate) fn finish(&mut self) {
+    /// Finishes the fingerprint calculation by flushing internal buffers.
+    pub fn finish(&mut self) {
         self.processor.flush();
     }
 
-    pub(crate) fn fingerprint(&self) -> Vec<u32> {
+    /// Returns the fingerprint of the last consumed audio data.
+    pub fn fingerprint(&self) -> Vec<u32> {
         // FIXME: This is a hack to get the fingerprint.
         let calc = (&*self.calculator).borrow();
         calc.fingerprint().to_vec()

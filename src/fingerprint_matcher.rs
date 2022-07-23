@@ -1,5 +1,5 @@
 use std::cmp::Reverse;
-use crate::fingerprinter::Config;
+use crate::fingerprinter::Configuration;
 use crate::gaussian::gaussian_filter;
 use crate::gradient::gradient;
 
@@ -18,7 +18,8 @@ fn align_strip(x: u32) -> u32 {
     x >> (32 - ALIGN_BITS)
 }
 
-pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Config) -> Result<Vec<Segment>, MatchError> {
+/// Returns similar segments of two audio streams using their fingerprints.
+pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> Result<Vec<Segment>, MatchError> {
     if fp1.len() + 1 >= OFFSET_MASK as usize {
         return Err(MatchError::FingerprintTooLong { index: 0 });
     }
@@ -184,7 +185,7 @@ impl Segment {
 mod tests {
     use crate::assert_eq_float;
     use crate::fingerprint_matcher::match_fingerprints;
-    use crate::fingerprinter::Config;
+    use crate::fingerprinter::Configuration;
 
     #[test]
     fn simple() {
@@ -194,7 +195,7 @@ mod tests {
         let fp1 = fp1_data.iter().copied().map(|c| c as u32).collect::<Vec<_>>();
         let fp2 = fp2_data.iter().copied().map(|c| c as u32).collect::<Vec<_>>();
 
-        let conf = Config::preset_test2();
+        let conf = Configuration::preset_test2();
         let segments = match_fingerprints(&fp1, &fp2, &conf).unwrap();
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].pos1, 5);
