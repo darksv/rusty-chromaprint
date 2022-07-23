@@ -13,6 +13,9 @@ mod audio_processor;
 mod chroma_normalizer;
 mod chroma_filter;
 mod fft;
+mod fingerprint_matcher;
+mod gaussian;
+mod gradient;
 
 
 fn main() {
