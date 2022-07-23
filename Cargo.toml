@@ -2,6 +2,8 @@
 name = "rusty-chromaprint"
 version = "0.1.0"
 edition = "2021"
+description = "Pure Rust port of Chromaprint"
+license = "MIT"
 
 [dependencies]
 rustfft = "6.0.1"
