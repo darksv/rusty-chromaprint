@@ -137,7 +137,7 @@ impl Fingerprinter {
             MIN_FREQ,
             MAX_FREQ,
             config.frame_size,
-            config.frame_overlap,
+            DEFAULT_SAMPLE_RATE,
             filter,
         );
         let fft = Fft::new(config.frame_size, config.frame_overlap, chroma);

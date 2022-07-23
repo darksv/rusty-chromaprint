@@ -5,8 +5,8 @@ pub(crate) struct Chroma<C: FeatureVectorConsumer> {
     interpolate: bool,
     notes: Vec<u8>,
     notes_frac: Vec<f64>,
-    min_index: u32,
-    max_index: u32,
+    min_index: usize,
+    max_index: usize,
     features: Vec<f64>,
     consumer: C,
 }
@@ -14,7 +14,7 @@ pub(crate) struct Chroma<C: FeatureVectorConsumer> {
 const NUM_BANDS: usize = 12;
 
 impl<C: FeatureVectorConsumer> Chroma<C> {
-    pub(crate) fn new(min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: usize, consumer: C) -> Self {
+    pub(crate) fn new(min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: u32, consumer: C) -> Self {
         let mut chroma = Self {
             interpolate: false,
             notes: vec![0; frame_size],
@@ -28,17 +28,15 @@ impl<C: FeatureVectorConsumer> Chroma<C> {
         chroma
     }
 
-    fn prepare_notes(&mut self, min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: usize) {
+    fn prepare_notes(&mut self, min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: u32) {
         self.min_index = freq_to_index(min_freq, frame_size, sample_rate).max(1);
-        self.max_index = freq_to_index(max_freq, frame_size, sample_rate).min(frame_size as u32 / 2);
-
+        self.max_index = freq_to_index(max_freq, frame_size, sample_rate).min(frame_size / 2);
         for i in self.min_index..self.max_index {
             let freq = index_to_freq(i, frame_size, sample_rate);
             let octave = freq_to_octave(freq);
-
             let note = NUM_BANDS as f64 * (octave - octave.floor());
-            self.notes[i as usize] = note.floor() as u8;
-            self.notes_frac[i as usize] = note - note.floor();
+            self.notes[i] = note.floor() as u8;
+            self.notes_frac[i] = note - note.floor();
         }
     }
 
@@ -51,23 +49,23 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     fn consume(&mut self, frame: &[f64]) {
         self.features.fill(0.0);
         for i in self.min_index..self.max_index {
-            let note = self.notes[i as usize] as usize;
-            let energy = frame[i as usize];
+            let note = self.notes[i] as usize;
+            let energy = frame[i];
             if self.interpolate {
                 let mut note2 = note;
                 let mut a = 1.0;
-                if self.notes_frac[i as usize] < 0.5 {
+                if self.notes_frac[i] < 0.5 {
                     note2 = (note + NUM_BANDS - 1) % NUM_BANDS;
-                    a = 0.5 + self.notes_frac[i as usize];
+                    a = 0.5 + self.notes_frac[i];
                 }
-                if self.notes_frac[i as usize] > 0.5 {
+                if self.notes_frac[i] > 0.5 {
                     note2 = (note + 1) % NUM_BANDS;
-                    a = 1.5 - self.notes_frac[i as usize];
+                    a = 1.5 - self.notes_frac[i];
                 }
                 self.features[note] += energy * a;
                 self.features[note2] += energy * (1.0 - a);
             } else {
-                self.features[note as usize] += energy;
+                self.features[note] += energy;
             }
         }
 
@@ -75,11 +73,11 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     }
 }
 
-fn freq_to_index(freq: u32, frame_size: usize, sample_rate: usize) -> u32 {
-    (freq as f64 * frame_size as f64 / sample_rate as f64).floor() as u32
+fn freq_to_index(freq: u32, frame_size: usize, sample_rate: u32) -> usize {
+    (frame_size as f64 * freq as f64 / sample_rate as f64).round() as usize
 }
 
-fn index_to_freq(i: u32, frame_size: usize, sample_rate: usize) -> f64 {
+fn index_to_freq(i: usize, frame_size: usize, sample_rate: u32) -> f64 {
     return (i as f64) * sample_rate as f64 / frame_size as f64;
 }
 
