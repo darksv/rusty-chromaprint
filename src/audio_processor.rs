@@ -1,3 +1,5 @@
+use rubato::{InterpolationParameters, Resampler};
+
 const MIN_SAMPLE_RATE: u32 = 1000;
 const MAX_BUFFER_SIZE: usize = 1024 * 32;
 
@@ -19,10 +21,12 @@ impl<C: AudioConsumer + ?Sized> AudioConsumer for Box<C> {
 pub struct AudioProcessor<C: AudioConsumer> {
     buffer: Box<[i16]>,
     buffer_offset: usize,
+    output_buffer: Vec<f64>,
+    input: Vec<f64>,
     channels: u32,
     consumer: C,
     target_sample_rate: u32,
-    resampler: Option<()>,
+    resampler: Option<rubato::SincFixedIn<f64>>,
 }
 
 impl<C: AudioConsumer> AudioProcessor<C> {
@@ -30,6 +34,8 @@ impl<C: AudioConsumer> AudioProcessor<C> {
         Self {
             buffer: vec![0; MAX_BUFFER_SIZE].into_boxed_slice(),
             buffer_offset: 0,
+            output_buffer: Vec::new(),
+            input: Vec::new(),
             channels: 0,
             consumer,
             target_sample_rate,
@@ -50,12 +56,12 @@ impl<C: AudioConsumer> AudioProcessor<C> {
                 for sample in input.iter().copied() {
                     self.push_sample(sample);
                 }
-            },
+            }
             2 => {
                 for sample in input.chunks_exact(2) {
                     self.push_sample(((i32::from(sample[0]) + i32::from(sample[1])) / 2) as i16);
                 }
-            },
+            }
             _ => {
                 for sample in input.chunks_exact(channels) {
                     let sum: i32 = sample.iter().copied().map(i32::from).sum();
@@ -63,15 +69,31 @@ impl<C: AudioConsumer> AudioProcessor<C> {
                     let average: i32 = sum / samples;
                     self.push_sample(average.try_into().unwrap());
                 }
-            },
+            }
         }
 
         consumed * channels
     }
 
     fn resample(&mut self) -> Result<(), ()> {
-        if let Some(_resampler) = self.resampler.as_mut() {
-            todo!()
+        if let Some(resampler) = self.resampler.as_mut() {
+            self.input.clear();
+            for &sample in &self.buffer[..self.buffer_offset] {
+                self.input.push(f64::from(sample) / f64::from(i16::MAX));
+            }
+
+            self.input.resize(resampler.input_frames_next(), 0.0);
+
+            resampler.process_into_buffer(
+                &[&self.input],
+                std::slice::from_mut(&mut self.output_buffer),
+                None,
+            ).unwrap();
+
+            self.consumer.consume(&self.output_buffer[..].iter().copied().map(|it| (it * f64::from(i16::MAX)) as i16).collect::<Vec<_>>());
+            self.output_buffer.clear();
+            self.buffer_offset = 0;
+            Ok(())
         } else {
             self.consumer.consume(&self.buffer[..self.buffer_offset]);
             self.buffer_offset = 0;
@@ -105,6 +127,22 @@ impl<C: AudioConsumer> AudioProcessor<C> {
         self.channels = channels;
         self.buffer_offset = 0;
         self.consumer.reset();
+
+        if self.target_sample_rate != sample_rate {
+            self.resampler = Some(rubato::SincFixedIn::new(
+                self.target_sample_rate as f64 / sample_rate as f64,
+                1.0,
+                InterpolationParameters {
+                    sinc_len: 16,
+                    f_cutoff: 0.8,
+                    oversampling_factor: 128,
+                    interpolation: rubato::InterpolationType::Nearest,
+                    window: rubato::WindowFunction::Blackman,
+                },
+                MAX_BUFFER_SIZE,
+                1,
+            ).unwrap());
+        }
 
         Ok(())
     }

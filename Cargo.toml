@@ -9,3 +9,4 @@ repository = "https://github.com/darksv/rusty-chromaprint"
 
 [dependencies]
 rustfft = "6.0.1"
+rubato = "0.12.0"
