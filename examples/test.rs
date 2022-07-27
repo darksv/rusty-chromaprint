@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use chromox::{Configuration, Fingerprinter};
+use rusty_chromaprint::{Configuration, Fingerprinter};
 
 fn read_s16le(path: impl AsRef<Path>) -> Vec<i16> {
     std::fs::read(path)

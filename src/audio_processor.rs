@@ -26,13 +26,13 @@ pub struct AudioProcessor<C: AudioConsumer> {
 }
 
 impl<C: AudioConsumer> AudioProcessor<C> {
-    pub(crate) fn new(sample_rate: u32, consumer: C) -> Self {
+    pub(crate) fn new(target_sample_rate: u32, consumer: C) -> Self {
         Self {
             buffer: vec![0; MAX_BUFFER_SIZE].into_boxed_slice(),
             buffer_offset: 0,
             channels: 0,
             consumer,
-            target_sample_rate: sample_rate,
+            target_sample_rate,
             resampler: None,
         }
     }
@@ -149,18 +149,17 @@ pub enum ResetError {
 #[cfg(test)]
 mod tests {
     use crate::audio_processor::{AudioConsumer, AudioProcessor};
-    use crate::read_s16le;
     use crate::utils::read_s16le;
 
     #[test]
     fn pass_through() {
-       let data = read_s16le("data/test_mono_44100.raw");
+        let data = read_s16le("data/test_mono_44100.raw");
         let mut processor = AudioProcessor::new(44100, AudioBuffer::new());
         processor.reset(44100, 1).unwrap();
         processor.consume(&data);
         processor.flush();
         let buffer = processor.into_consumer();
-       assert_eq!(buffer.data, data);
+        assert_eq!(buffer.data, data);
     }
 
     #[test]
