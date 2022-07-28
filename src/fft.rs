@@ -4,8 +4,7 @@ use std::sync::Arc;
 use rustfft::num_complex::{Complex, Complex64};
 use rustfft::num_traits::Zero;
 
-use crate::audio_processor::AudioConsumer;
-use crate::chroma::FeatureVectorConsumer;
+use crate::stages::{AudioConsumer, FeatureVectorConsumer, Stage};
 
 pub struct Fft<C: FeatureVectorConsumer> {
     consumer: C,
@@ -36,6 +35,14 @@ impl<C: FeatureVectorConsumer> Fft<C> {
             window: make_hamming_window(frame_size, 1.0 / f64::from(i16::MAX)),
             ring_buf: VecDeque::new(),
         }
+    }
+}
+
+impl<C: FeatureVectorConsumer> Stage for Fft<C> {
+    type Output = C::Output;
+
+    fn output(&self) -> &Self::Output {
+        self.consumer.output()
     }
 }
 

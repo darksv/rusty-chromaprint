@@ -1,4 +1,5 @@
 use std::cmp::Reverse;
+
 use crate::fingerprinter::Configuration;
 use crate::gaussian::gaussian_filter;
 use crate::gradient::gradient;

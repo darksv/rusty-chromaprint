@@ -1,11 +1,9 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::audio_processor::{AudioConsumer, AudioProcessor, ResetError};
+use crate::audio_processor::{AudioProcessor, ResetError};
 use crate::chroma::Chroma;
 use crate::chroma_filter::ChromaFilter;
 use crate::chroma_normalizer::ChromaNormalizer;
 use crate::classifier::Classifier;
+use crate::stages::{AudioConsumer, Stage};
 use crate::fft::Fft;
 use crate::filter::{Filter, FilterKind};
 use crate::fingerprint_calculator::FingerprintCalculator;
@@ -137,15 +135,13 @@ const DEFAULT_SAMPLE_RATE: u32 = 11025;
 
 /// Calculates a fingerprint for a given audio samples.
 pub struct Fingerprinter {
-    processor: AudioProcessor<Box<dyn AudioConsumer>>,
-    calculator: Rc<RefCell<FingerprintCalculator>>,
+    processor: AudioProcessor<Box<dyn AudioConsumer<Output=[u32]>>>,
 }
 
 impl Fingerprinter {
     /// Creates a new [Fingerprinter] with the given [Configuration].
     pub fn new(config: Configuration) -> Self {
-        let calculator = Rc::new(RefCell::new(FingerprintCalculator::new(config.classifiers)));
-        let normalizer = ChromaNormalizer::new(calculator.clone());
+        let normalizer = ChromaNormalizer::new(FingerprintCalculator::new(config.classifiers));
         let filter = ChromaFilter::new(config.filter_coefficients.into_boxed_slice(), normalizer);
         let chroma = Chroma::new(
             MIN_FREQ,
@@ -155,11 +151,8 @@ impl Fingerprinter {
             filter,
         );
         let fft = Fft::new(config.frame_size, config.frame_overlap, chroma);
-        let processor = AudioProcessor::new(DEFAULT_SAMPLE_RATE, Box::new(fft) as Box<dyn AudioConsumer>);
-        Self {
-            processor,
-            calculator,
-        }
+        let processor = AudioProcessor::new(DEFAULT_SAMPLE_RATE, Box::new(fft) as Box<dyn AudioConsumer<Output=_>>);
+        Self { processor }
     }
 
     /// Resets the internal state to allow for a new fingerprint calculation.
@@ -179,10 +172,8 @@ impl Fingerprinter {
     }
 
     /// Returns the fingerprint of the last consumed audio data.
-    pub fn fingerprint(&self) -> Vec<u32> {
-        // FIXME: This is a hack to get the fingerprint.
-        let calc = (&*self.calculator).borrow();
-        calc.fingerprint().to_vec()
+    pub fn fingerprint(&self) -> &[u32] {
+        self.processor.output()
     }
 }
 

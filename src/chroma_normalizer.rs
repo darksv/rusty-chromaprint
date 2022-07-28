@@ -1,4 +1,4 @@
-use crate::chroma::FeatureVectorConsumer;
+use crate::stages::{FeatureVectorConsumer, Stage};
 
 pub struct ChromaNormalizer<C: FeatureVectorConsumer> {
     consumer: C,
@@ -7,6 +7,14 @@ pub struct ChromaNormalizer<C: FeatureVectorConsumer> {
 impl<C: FeatureVectorConsumer> ChromaNormalizer<C> {
     pub(crate) fn new(consumer: C) -> Self {
         Self { consumer }
+    }
+}
+
+impl<C: FeatureVectorConsumer> Stage for ChromaNormalizer<C> {
+    type Output = C::Output;
+
+    fn output(&self) -> &Self::Output {
+        self.consumer.output()
     }
 }
 

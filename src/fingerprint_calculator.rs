@@ -1,5 +1,5 @@
-use crate::chroma::FeatureVectorConsumer;
 use crate::classifier::Classifier;
+use crate::stages::{FeatureVectorConsumer, Stage};
 use crate::rolling_image::RollingIntegralImage;
 
 pub struct FingerprintCalculator {
@@ -37,6 +37,14 @@ impl FingerprintCalculator {
 
     fn clear_fingerprint(&mut self) {
         self.fingerprint.clear()
+    }
+}
+
+impl Stage for FingerprintCalculator {
+    type Output = [u32];
+
+    fn output(&self) -> &Self::Output {
+        self.fingerprint.as_slice()
     }
 }
 

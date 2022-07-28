@@ -1,20 +1,21 @@
 //! Pure Rust port of [chromaprint](https://acoustid.org/chromaprint)
 
-mod quantize;
-mod filter;
-mod rolling_image;
-mod utils;
-mod classifier;
-mod fingerprint_calculator;
-mod fingerprinter;
-mod chroma;
+pub use fingerprint_matcher::match_fingerprints;
+pub use fingerprinter::{Configuration, Fingerprinter};
+
 mod audio_processor;
-mod chroma_normalizer;
+mod chroma;
 mod chroma_filter;
+mod chroma_normalizer;
+mod classifier;
 mod fft;
+mod filter;
+mod fingerprint_calculator;
 mod fingerprint_matcher;
+mod fingerprinter;
 mod gaussian;
 mod gradient;
-
-pub use fingerprinter::{Fingerprinter, Configuration};
-pub use fingerprint_matcher::match_fingerprints;
+mod quantize;
+mod rolling_image;
+mod stages;
+mod utils;

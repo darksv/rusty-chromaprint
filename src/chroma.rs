@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use crate::stages::{FeatureVectorConsumer, Stage};
 
 pub(crate) struct Chroma<C: FeatureVectorConsumer> {
     interpolate: bool,
@@ -45,6 +44,14 @@ impl<C: FeatureVectorConsumer> Chroma<C> {
     }
 }
 
+impl<C: FeatureVectorConsumer> Stage for Chroma<C> {
+    type Output = C::Output;
+
+    fn output(&self) -> &Self::Output {
+        self.consumer.output()
+    }
+}
+
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     fn consume(&mut self, frame: &[f64]) {
         self.features.fill(0.0);
@@ -86,29 +93,6 @@ fn freq_to_octave(freq: f64) -> f64 {
     return f64::log2(freq / base);
 }
 
-pub trait FeatureVectorConsumer {
-    fn consume(&mut self, features: &[f64]);
-    fn reset(&mut self) {}
-}
-
-impl<C: FeatureVectorConsumer + ?Sized> FeatureVectorConsumer for Rc<RefCell<C>> {
-    fn consume(&mut self, features: &[f64]) {
-        (**self).borrow_mut().consume(features);
-    }
-    fn reset(&mut self) {
-        (**self).borrow_mut().reset();
-    }
-}
-
-impl<C: FeatureVectorConsumer + ?Sized> FeatureVectorConsumer for &mut C {
-    fn consume(&mut self, features: &[f64]) {
-        (**self).consume(features);
-    }
-    fn reset(&mut self) {
-        (**self).reset();
-    }
-}
-
 struct FeatureVectorBuffer {
     features: Vec<f64>,
 }
@@ -118,6 +102,14 @@ impl FeatureVectorBuffer {
         Self {
             features: vec![],
         }
+    }
+}
+
+impl Stage for FeatureVectorBuffer {
+    type Output = [f64];
+
+    fn output(&self) -> &Self::Output {
+        self.features.as_slice()
     }
 }
 

@@ -1,22 +1,9 @@
 use rubato::{InterpolationParameters, Resampler};
 
+use crate::stages::{AudioConsumer, Stage};
+
 const MIN_SAMPLE_RATE: u32 = 1000;
 const MAX_BUFFER_SIZE: usize = 1024 * 32;
-
-pub trait AudioConsumer {
-    fn reset(&mut self);
-    fn consume(&mut self, data: &[i16]);
-}
-
-impl<C: AudioConsumer + ?Sized> AudioConsumer for Box<C> {
-    fn reset(&mut self) {
-        (**self).reset();
-    }
-
-    fn consume(&mut self, data: &[i16]) {
-        (**self).consume(data);
-    }
-}
 
 pub struct AudioProcessor<C: AudioConsumer> {
     buffer: Box<[i16]>,
@@ -158,6 +145,14 @@ impl<C: AudioConsumer> AudioProcessor<C> {
     }
 }
 
+impl<C: AudioConsumer> Stage for AudioProcessor<C> {
+    type Output = C::Output;
+
+    fn output(&self) -> &Self::Output {
+        self.consumer.output()
+    }
+}
+
 impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
     fn reset(&mut self) {
         todo!();
@@ -186,7 +181,7 @@ pub enum ResetError {
 
 #[cfg(test)]
 mod tests {
-    use crate::audio_processor::{AudioConsumer, AudioProcessor};
+    use crate::audio_processor::{AudioConsumer, AudioProcessor, Stage};
     use crate::utils::read_s16le;
 
     #[test]
@@ -222,6 +217,14 @@ mod tests {
             Self {
                 data: Vec::new(),
             }
+        }
+    }
+
+    impl Stage for AudioBuffer {
+        type Output = [i16];
+
+        fn output(&self) -> &Self::Output {
+            self.data.as_slice()
         }
     }
 

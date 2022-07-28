@@ -1,4 +1,4 @@
-use crate::chroma::FeatureVectorConsumer;
+use crate::stages::{FeatureVectorConsumer, Stage};
 
 pub struct ChromaFilter<C: FeatureVectorConsumer> {
     coefficients: Box<[f64]>,
@@ -19,6 +19,14 @@ impl<C: FeatureVectorConsumer> ChromaFilter<C> {
             buffer_offset: 0,
             buffer_size: 1,
         }
+    }
+}
+
+impl<C: FeatureVectorConsumer> Stage for ChromaFilter<C> {
+    type Output = C::Output;
+
+    fn output(&self) -> &Self::Output {
+        self.consumer.output()
     }
 }
 
@@ -73,6 +81,14 @@ impl Image {
     }
 }
 
+impl Stage for Image {
+    type Output = [f64];
+
+    fn output(&self) -> &Self::Output {
+        self.data.as_slice()
+    }
+}
+
 impl FeatureVectorConsumer for Image {
     fn consume(&mut self, features: &[f64]) {
         self.data.extend_from_slice(features);
@@ -82,8 +98,8 @@ impl FeatureVectorConsumer for Image {
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::chroma::FeatureVectorConsumer;
     use crate::chroma_filter::{ChromaFilter, Image};
+    use crate::stages::FeatureVectorConsumer;
 
     #[test]
     fn blur2() {
