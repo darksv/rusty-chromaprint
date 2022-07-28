@@ -36,7 +36,7 @@ impl<C: AudioConsumer + ?Sized> AudioConsumer for Box<C> {
 
 pub trait FeatureVectorConsumer: Stage {
     fn consume(&mut self, features: &[f64]);
-    fn reset(&mut self) {}
+    fn reset(&mut self);
 }
 
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for &mut C {

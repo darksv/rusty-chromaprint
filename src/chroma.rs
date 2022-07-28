@@ -78,6 +78,10 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
 
         self.consumer.consume(&self.features);
     }
+
+    fn reset(&mut self) {
+        self.consumer.reset();
+    }
 }
 
 fn freq_to_index(freq: u32, frame_size: usize, sample_rate: u32) -> usize {
@@ -117,6 +121,10 @@ impl FeatureVectorConsumer for FeatureVectorBuffer {
     fn consume(&mut self, features: &[f64]) {
         self.features.clear();
         self.features.extend_from_slice(features);
+    }
+
+    fn reset(&mut self) {
+        self.features.clear();
     }
 }
 

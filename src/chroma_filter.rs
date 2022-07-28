@@ -93,6 +93,10 @@ impl FeatureVectorConsumer for Image {
     fn consume(&mut self, features: &[f64]) {
         self.data.extend_from_slice(features);
     }
+
+    fn reset(&mut self) {
+        self.data.clear();
+    }
 }
 
 #[cfg(test)]

@@ -24,6 +24,10 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for ChromaNormalizer<C> {
         normalize(&mut features, 0.01);
         self.consumer.consume(&features);
     }
+
+    fn reset(&mut self) {
+        self.consumer.reset();
+    }
 }
 
 fn normalize(values: &mut [f64], eps: f64) {
