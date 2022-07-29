@@ -139,10 +139,6 @@ impl<C: AudioConsumer> AudioProcessor<C> {
             self.resample().unwrap();
         }
     }
-
-    fn into_consumer(self) -> C {
-        self.consumer
-    }
 }
 
 impl<C: AudioConsumer> Stage for AudioProcessor<C> {
@@ -191,8 +187,7 @@ mod tests {
         processor.reset(44100, 1).unwrap();
         processor.consume(&data);
         processor.flush();
-        let buffer = processor.into_consumer();
-        assert_eq!(buffer.data, data);
+        assert_eq!(processor.output(), data);
     }
 
     #[test]
@@ -204,8 +199,7 @@ mod tests {
         processor.reset(44100, 2).unwrap();
         processor.consume(&data2);
         processor.flush();
-        let buffer = processor.into_consumer();
-        assert_eq!(buffer.data, data1);
+        assert_eq!(processor.output(), data1);
     }
 
     struct AudioBuffer {

@@ -10,7 +10,7 @@ macro_rules! assert_eq_float {
     };
 }
 
-
+#[allow(unused)]
 pub(crate) fn read_s16le(path: impl AsRef<Path>) -> Vec<i16> {
     std::fs::read(path)
         .unwrap()

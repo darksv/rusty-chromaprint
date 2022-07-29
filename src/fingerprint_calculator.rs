@@ -30,14 +30,6 @@ impl FingerprintCalculator {
         }
         return bits;
     }
-
-    pub(crate) fn fingerprint(&self) -> &[u32] {
-        &self.fingerprint
-    }
-
-    fn clear_fingerprint(&mut self) {
-        self.fingerprint.clear()
-    }
 }
 
 impl Stage for FingerprintCalculator {

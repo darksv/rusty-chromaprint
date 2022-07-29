@@ -38,10 +38,6 @@ impl<C: FeatureVectorConsumer> Chroma<C> {
             self.notes_frac[i] = note - note.floor();
         }
     }
-
-    fn into_consumer(self) -> C {
-        self.consumer
-    }
 }
 
 impl<C: FeatureVectorConsumer> Stage for Chroma<C> {
@@ -97,42 +93,11 @@ fn freq_to_octave(freq: f64) -> f64 {
     return f64::log2(freq / base);
 }
 
-struct FeatureVectorBuffer {
-    features: Vec<f64>,
-}
-
-impl FeatureVectorBuffer {
-    fn new() -> Self {
-        Self {
-            features: vec![],
-        }
-    }
-}
-
-impl Stage for FeatureVectorBuffer {
-    type Output = [f64];
-
-    fn output(&self) -> &Self::Output {
-        self.features.as_slice()
-    }
-}
-
-impl FeatureVectorConsumer for FeatureVectorBuffer {
-    fn consume(&mut self, features: &[f64]) {
-        self.features.clear();
-        self.features.extend_from_slice(features);
-    }
-
-    fn reset(&mut self) {
-        self.features.clear();
-    }
-}
-
-
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::chroma::{Chroma, FeatureVectorBuffer, FeatureVectorConsumer};
+    use crate::chroma::{Chroma, FeatureVectorConsumer};
+    use crate::stages::Stage;
 
     #[test]
     fn normal_a() {
@@ -140,16 +105,16 @@ mod tests {
         let mut frame = vec![0.0; 128];
         frame[113] = 1.0;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
         }
     }
 
@@ -159,16 +124,16 @@ mod tests {
         let mut frame = vec![0.0; 128];
         frame[112] = 1.0;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
         }
     }
 
@@ -178,16 +143,16 @@ mod tests {
         let mut frame = vec![0.0; 128];
         frame[64] = 1.0;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
         }
     }
 
@@ -199,16 +164,16 @@ mod tests {
         let mut chroma = Chroma::new(10, 510, 256, 1000, FeatureVectorBuffer::new());
         chroma.interpolate = true;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             0.555242, 0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.444758,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
         }
     }
 
@@ -219,16 +184,16 @@ mod tests {
         let mut chroma = Chroma::new(10, 510, 256, 1000, FeatureVectorBuffer::new());
         chroma.interpolate = true;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             0.401354, 0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.598646,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
         }
     }
 
@@ -239,16 +204,47 @@ mod tests {
         let mut chroma = Chroma::new(10, 510, 256, 1000, FeatureVectorBuffer::new());
         chroma.interpolate = true;
         chroma.consume(&frame);
-        let buffer = chroma.into_consumer();
+        let features = chroma.output();
 
-        assert_eq!(12, buffer.features.len());
+        assert_eq!(12, features.len());
         let expected_features = [
             0.0, 0.286905, 0.713095, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         ];
 
         for i in 0..12 {
-            assert_eq_float!(expected_features[i], buffer.features[i], 0.0001);
+            assert_eq_float!(expected_features[i], features[i], 0.0001);
+        }
+    }
+
+    struct FeatureVectorBuffer {
+        features: Vec<f64>,
+    }
+
+    impl FeatureVectorBuffer {
+        fn new() -> Self {
+            Self {
+                features: vec![],
+            }
+        }
+    }
+
+    impl Stage for FeatureVectorBuffer {
+        type Output = [f64];
+
+        fn output(&self) -> &Self::Output {
+            self.features.as_slice()
+        }
+    }
+
+    impl FeatureVectorConsumer for FeatureVectorBuffer {
+        fn consume(&mut self, features: &[f64]) {
+            self.features.clear();
+            self.features.extend_from_slice(features);
+        }
+
+        fn reset(&mut self) {
+            self.features.clear();
         }
     }
 }

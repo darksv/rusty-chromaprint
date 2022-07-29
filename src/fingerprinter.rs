@@ -77,16 +77,9 @@ impl Configuration {
         self
     }
 
-    fn sample_rate(&self) -> u32 {
+    /// Target sample rate for fingerprint calculation.
+    pub fn sample_rate(&self) -> u32 {
         DEFAULT_SAMPLE_RATE
-    }
-
-    fn item_duration(&self) -> usize {
-        self.frame_size - self.frame_overlap
-    }
-
-    fn item_duration_in_seconds(&self) -> f64 {
-        self.item_duration() as f64 / self.sample_rate() as f64
     }
 
     pub fn preset_test1() -> Self {

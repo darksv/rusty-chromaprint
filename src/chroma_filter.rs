@@ -55,55 +55,11 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for ChromaFilter<C> {
     }
 }
 
-struct Image {
-    columns: usize,
-    data: Vec<f64>,
-}
-
-impl Image {
-    fn new(columns: usize) -> Self {
-        Self {
-            columns,
-            data: vec![],
-        }
-    }
-
-    fn columns(&self) -> usize {
-        self.columns
-    }
-
-    fn rows(&self) -> usize {
-        self.data.len() / self.columns
-    }
-
-    fn get(&self, row: usize, col: usize) -> f64 {
-        self.data[row * self.columns + col]
-    }
-}
-
-impl Stage for Image {
-    type Output = [f64];
-
-    fn output(&self) -> &Self::Output {
-        self.data.as_slice()
-    }
-}
-
-impl FeatureVectorConsumer for Image {
-    fn consume(&mut self, features: &[f64]) {
-        self.data.extend_from_slice(features);
-    }
-
-    fn reset(&mut self) {
-        self.data.clear();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::chroma_filter::{ChromaFilter, Image};
-    use crate::stages::FeatureVectorConsumer;
+    use crate::chroma_filter::ChromaFilter;
+    use crate::stages::{FeatureVectorConsumer, Stage};
 
     #[test]
     fn blur2() {
@@ -122,7 +78,6 @@ mod tests {
         assert_eq!(5.5, image.get(0, 1));
         assert_eq!(6.5, image.get(1, 1));
     }
-
 
     #[test]
     fn blur3() {
@@ -160,5 +115,45 @@ mod tests {
         assert_eq!(-1.0, image.get(1, 0));
         assert_eq!(-1.0, image.get(0, 1));
         assert_eq!(-1.0, image.get(1, 1));
+    }
+
+    struct Image {
+        columns: usize,
+        data: Vec<f64>,
+    }
+
+    impl Image {
+        fn new(columns: usize) -> Self {
+            Self {
+                columns,
+                data: vec![],
+            }
+        }
+
+        fn rows(&self) -> usize {
+            self.data.len() / self.columns
+        }
+
+        fn get(&self, row: usize, col: usize) -> f64 {
+            self.data[row * self.columns + col]
+        }
+    }
+
+    impl Stage for Image {
+        type Output = [f64];
+
+        fn output(&self) -> &Self::Output {
+            self.data.as_slice()
+        }
+    }
+
+    impl FeatureVectorConsumer for Image {
+        fn consume(&mut self, features: &[f64]) {
+            self.data.extend_from_slice(features);
+        }
+
+        fn reset(&mut self) {
+            self.data.clear();
+        }
     }
 }

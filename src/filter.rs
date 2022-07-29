@@ -36,10 +36,6 @@ impl Filter {
     }
 }
 
-fn subtract(a: f64, b: f64) -> f64 {
-    return a - b;
-}
-
 fn subtract_log(a: f64, b: f64) -> f64 {
     let r = f64::ln((1.0 + a) / (1.0 + b));
     assert!(!r.is_nan());
@@ -155,7 +151,7 @@ fn filter5(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::filter::{Filter, filter0, filter1, filter2, filter3, filter4, filter5, FilterKind, subtract, subtract_log};
+    use crate::filter::{Filter, filter0, filter1, filter2, filter3, filter4, filter5, FilterKind, subtract_log};
     use crate::rolling_image::RollingIntegralImage;
 
     #[test]
@@ -287,5 +283,9 @@ mod tests {
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter5(&integral_image, 0, 0, 3, 3, subtract);
         assert_eq_float!(-15.0, res); // 3+4+5 - (1+2+3) - (6+7+8)
+    }
+
+    fn subtract(a: f64, b: f64) -> f64 {
+        return a - b;
     }
 }

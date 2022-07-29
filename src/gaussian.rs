@@ -147,6 +147,7 @@ impl ReflectIterator {
         }
     }
 
+    #[cfg(test)]
     fn safe_forward_distance(&mut self) -> usize {
         if self.forward {
             return self.size - self.pos - 1;

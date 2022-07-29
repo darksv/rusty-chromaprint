@@ -17,6 +17,7 @@ impl RollingIntegralImage {
         }
     }
 
+    #[cfg(test)]
     pub fn from_data<D>(columns: usize, data: &[D]) -> Self
         where D: Copy + Into<f64>
     {
@@ -57,6 +58,7 @@ impl RollingIntegralImage {
         self.rows += 1;
     }
 
+    #[cfg(test)]
     fn columns(&self) -> usize {
         self.columns
     }
