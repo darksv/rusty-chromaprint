@@ -1,0 +1,12 @@
+[package]
+name = "rusty-chromaprint"
+version = "0.1.1"
+edition = "2021"
+description = "Pure Rust port of Chromaprint"
+license = "MIT"
+homepage = "https://github.com/darksv/rusty-chromaprint"
+repository = "https://github.com/darksv/rusty-chromaprint"
+
+[dependencies]
+rustfft = "6.0.1"
+rubato = "0.12.0"
