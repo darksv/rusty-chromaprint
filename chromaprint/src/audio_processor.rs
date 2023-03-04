@@ -1,4 +1,6 @@
-use rubato::{InterpolationParameters, Resampler};
+use std::fmt::{Display, Formatter};
+
+use rubato::{InterpolationParameters, Resampler, ResamplerConstructionError};
 
 use crate::stages::{AudioConsumer, Stage};
 
@@ -124,7 +126,7 @@ impl<C: AudioConsumer> AudioProcessor<C> {
                 },
                 MAX_BUFFER_SIZE,
                 1,
-            ).unwrap());
+            )?);
         }
 
         Ok(())
@@ -168,8 +170,26 @@ impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
 pub enum ResetError {
     SampleRateTooLow,
     NoChannels,
-    CannotResample,
+    CannotResample(ResamplerConstructionError),
 }
+
+impl From<ResamplerConstructionError> for ResetError {
+    fn from(e: ResamplerConstructionError) -> Self {
+        ResetError::CannotResample(e)
+    }
+}
+
+impl Display for ResetError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResetError::SampleRateTooLow => writeln!(f, "Sample rate is too low. Required min. {}", MIN_SAMPLE_RATE),
+            ResetError::NoChannels => writeln!(f, "At least one channel is required"),
+            ResetError::CannotResample(e) => writeln!(f, "Cannot resample: {}", e),
+        }
+    }
+}
+
+impl std::error::Error for ResetError {}
 
 #[cfg(test)]
 mod tests {

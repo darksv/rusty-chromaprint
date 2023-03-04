@@ -1,0 +1,9 @@
+[package]
+name = "compare"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+symphonia = { version = "0.5.2", features = ["all"]}
+rusty-chromaprint = {path = "../chromaprint"}
+anyhow = "1.0"
