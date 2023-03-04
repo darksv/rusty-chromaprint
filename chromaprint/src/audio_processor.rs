@@ -107,10 +107,6 @@ impl<C: AudioConsumer> AudioProcessor<C> {
             return Err(ResetError::SampleRateTooLow);
         }
 
-        if sample_rate != self.target_sample_rate {
-            return Err(ResetError::CannotResample);
-        }
-
         self.channels = channels;
         self.buffer_offset = 0;
         self.consumer.reset();
