@@ -96,7 +96,7 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
         let mut smoothed_bit_counts = vec![0.0; size];
         gaussian_filter(&mut bit_counts, &mut smoothed_bit_counts, 8.0, 3);
 
-        let mut grad = vec![0.0; size];
+        let mut grad = Vec::with_capacity(size);
         gradient(smoothed_bit_counts.iter().copied(), &mut grad);
 
         for i in 0..size {
