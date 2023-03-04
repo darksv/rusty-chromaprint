@@ -11,7 +11,7 @@ fn read_s16le(path: impl AsRef<Path>) -> Vec<i16> {
 }
 
 fn main() {
-    let mut printer = Fingerprinter::new(Configuration::preset_test1());
+    let mut printer = Fingerprinter::new(&Configuration::preset_test1());
     printer.start(11025, 2).unwrap();
     printer.consume(&read_s16le("data/test_stereo_44100.raw"));
     printer.finish();

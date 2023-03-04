@@ -1,4 +1,5 @@
 use std::cmp::Reverse;
+use std::fmt::{Display, Formatter};
 
 use crate::fingerprinter::Configuration;
 use crate::gaussian::gaussian_filter;
@@ -8,6 +9,16 @@ use crate::gradient::gradient;
 pub enum MatchError {
     FingerprintTooLong { index: u8 },
 }
+
+impl Display for MatchError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MatchError::FingerprintTooLong { index } => write!(f, "Fingerprint #{index} is too long"),
+        }
+    }
+}
+
+impl std::error::Error for MatchError {}
 
 const ALIGN_BITS: u32 = 12;
 const HASH_SHIFT: u32 = 32 - ALIGN_BITS;
@@ -126,24 +137,20 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
                 if let Some(s1) = segments.last_mut() {
                     if (s1.score - score).abs() < 0.7 {
                         *s1 = s1.merged(&Segment {
-                            pos1: offset1 + begin,
-                            pos2: offset2 + begin,
-                            duration,
+                            offset1: offset1 + begin,
+                            offset2: offset2 + begin,
+                            items_count: duration,
                             score,
-                            left_score: score,
-                            right_score: score,
                         });
                         added = true;
                     }
                 }
                 if !added {
                     segments.push(Segment {
-                        pos1: offset1 + begin,
-                        pos2: offset2 + begin,
-                        duration,
+                        offset1: offset1 + begin,
+                        offset2: offset2 + begin,
+                        items_count: duration,
                         score,
-                        left_score: score,
-                        right_score: score,
                     });
                 }
             }
@@ -155,29 +162,63 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
     Ok(segments)
 }
 
+/// Segment of an audio that is similar between two fingerprints.
 #[derive(Debug)]
 pub struct Segment {
-    pub pos1: usize,
-    pub pos2: usize,
-    pub duration: usize,
+    /// Index of the item in the first fingerprint.
+    pub offset1: usize,
+
+    /// Index of an item in the second fingerprint.
+    pub offset2: usize,
+
+    /// Number of items from the fingerprint corresponding to this segment.
+    pub items_count: usize,
+
+    /// Score that corresponds to similarity of this segment.
+    /// The smaller this value is, the stronger similarity.
+    ///
+    /// This value can be be 0 up to 32.
     pub score: f64,
-    pub left_score: f64,
-    pub right_score: f64,
+}
+
+impl Segment {
+    /// A timestamp representing the start of the segment in the first fingerprint.
+    pub fn start1(&self, config: &Configuration) -> f32 {
+        config.item_duration_in_seconds() * self.offset1 as f32
+    }
+
+    /// A timestamp representing the end of the segment in the first fingerprint.
+    pub fn end1(&self, config: &Configuration) -> f32 {
+        self.start1(config) + self.duration(config)
+    }
+
+    /// A timestamp representing the start of the segment in the second fingerprint.
+    pub fn start2(&self, config: &Configuration) -> f32 {
+        config.item_duration_in_seconds() * self.offset2 as f32
+    }
+
+    /// A timestamp representing the end of the segment in the second fingerprint.
+    pub fn end2(&self, config: &Configuration) -> f32 {
+        self.start2(config) + self.duration(config)
+    }
+
+    /// Duration of the segment (in seconds).
+    pub fn duration(&self, config: &Configuration) -> f32 {
+        config.item_duration_in_seconds() * self.items_count as f32
+    }
 }
 
 impl Segment {
     fn merged(&self, other: &Self) -> Self {
-        assert_eq!(self.pos1 + self.duration, other.pos1);
-        assert_eq!(self.pos2 + self.duration, other.pos2);
-        let new_duration = self.duration + other.duration;
-        let new_score = (self.score * self.duration as f64 + other.score * other.duration as f64) / new_duration as f64;
+        assert_eq!(self.offset1 + self.items_count, other.offset1);
+        assert_eq!(self.offset2 + self.items_count, other.offset2);
+        let new_duration = self.items_count + other.items_count;
+        let new_score = (self.score * self.items_count as f64 + other.score * other.items_count as f64) / new_duration as f64;
         return Segment {
-            pos1: self.pos1,
-            pos2: self.pos2,
-            duration: new_duration,
+            offset1: self.offset1,
+            offset2: self.offset2,
+            items_count: new_duration,
             score: new_score,
-            left_score: self.score,
-            right_score: other.score,
         };
     }
 }
@@ -199,9 +240,9 @@ mod tests {
         let conf = Configuration::preset_test2();
         let segments = match_fingerprints(&fp1, &fp2, &conf).unwrap();
         assert_eq!(segments.len(), 1);
-        assert_eq!(segments[0].pos1, 5);
-        assert_eq!(segments[0].pos2, 0);
-        assert_eq!(segments[0].duration, 216);
+        assert_eq!(segments[0].offset1, 5);
+        assert_eq!(segments[0].offset2, 0);
+        assert_eq!(segments[0].items_count, 216);
         assert_eq_float!(segments[0].score, 3.17183, 0.001);
     }
 }

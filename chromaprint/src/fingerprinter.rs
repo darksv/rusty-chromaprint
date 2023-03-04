@@ -119,6 +119,15 @@ impl Configuration {
             .with_frame_size(DEFAULT_FRAME_SIZE / 2)
             .with_frame_overlap(DEFAULT_FRAME_SIZE / 2 - DEFAULT_FRAME_SIZE / 4)
     }
+
+    fn samples_in_item(&self) -> usize {
+        self.frame_size - self.frame_overlap
+    }
+
+    /// A duration of a single item from the fingerprint.
+    pub fn item_duration_in_seconds(&self) -> f32 {
+        self.samples_in_item() as f32 / self.sample_rate() as f32
+    }
 }
 
 const MIN_FREQ: u32 = 28;
@@ -133,9 +142,9 @@ pub struct Fingerprinter {
 
 impl Fingerprinter {
     /// Creates a new [Fingerprinter] with the given [Configuration].
-    pub fn new(config: Configuration) -> Self {
-        let normalizer = ChromaNormalizer::new(FingerprintCalculator::new(config.classifiers));
-        let filter = ChromaFilter::new(config.filter_coefficients.into_boxed_slice(), normalizer);
+    pub fn new(config: &Configuration) -> Self {
+        let normalizer = ChromaNormalizer::new(FingerprintCalculator::new(config.classifiers.clone()));
+        let filter = ChromaFilter::new(config.filter_coefficients.clone().into_boxed_slice(), normalizer);
         let chroma = Chroma::new(
             MIN_FREQ,
             MAX_FREQ,

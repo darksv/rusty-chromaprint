@@ -2,7 +2,7 @@ use crate::classifier::Classifier;
 use crate::stages::{FeatureVectorConsumer, Stage};
 use crate::rolling_image::RollingIntegralImage;
 
-pub struct FingerprintCalculator {
+pub(crate) struct FingerprintCalculator {
     classifiers: Vec<Classifier>,
     max_filter_width: usize,
     image: RollingIntegralImage,

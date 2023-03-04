@@ -1,5 +1,6 @@
 use std::path::Path;
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! assert_eq_float {
     ($a:expr, $b:expr) => {
