@@ -127,31 +127,32 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
 
 
         let match_threshold = 10.0;
+        let max_score_difference = 0.7;
 
         let mut begin = 0;
         for end in gradient_peaks {
             let duration = end - begin;
             let score: f64 = orig_bit_counts[begin..end].iter().sum::<f64>() / (duration as f64);
             if score < match_threshold {
+                let new_segment = Segment {
+                    offset1: offset1 + begin,
+                    offset2: offset2 + begin,
+                    items_count: duration,
+                    score,
+                };
+
                 let mut added = false;
                 if let Some(s1) = segments.last_mut() {
-                    if (s1.score - score).abs() < 0.7 {
-                        *s1 = s1.merged(&Segment {
-                            offset1: offset1 + begin,
-                            offset2: offset2 + begin,
-                            items_count: duration,
-                            score,
-                        });
-                        added = true;
+                    if (s1.score - score).abs() < max_score_difference {
+                        if let Some(merged) = s1.try_merge(&new_segment) {
+                            *s1 = merged;
+                            added = true;
+                        }
                     }
                 }
+
                 if !added {
-                    segments.push(Segment {
-                        offset1: offset1 + begin,
-                        offset2: offset2 + begin,
-                        items_count: duration,
-                        score,
-                    });
+                    segments.push(new_segment);
                 }
             }
             begin = end;
@@ -209,17 +210,25 @@ impl Segment {
 }
 
 impl Segment {
-    fn merged(&self, other: &Self) -> Self {
-        assert_eq!(self.offset1 + self.items_count, other.offset1);
-        assert_eq!(self.offset2 + self.items_count, other.offset2);
+    /// Try to merge two consecutive segments into one.
+    fn try_merge(&self, other: &Self) -> Option<Self> {
+        // Check if segments are consecutive
+        if self.offset1 + self.items_count != other.offset1 {
+            return None;
+        }
+
+        if self.offset2 + self.items_count != other.offset2 {
+            return None;
+        }
+
         let new_duration = self.items_count + other.items_count;
         let new_score = (self.score * self.items_count as f64 + other.score * other.items_count as f64) / new_duration as f64;
-        return Segment {
+        return Some(Segment {
             offset1: self.offset1,
             offset2: self.offset2,
             items_count: new_duration,
             score: new_score,
-        };
+        });
     }
 }
 
