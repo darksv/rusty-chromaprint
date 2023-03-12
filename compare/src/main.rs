@@ -1,3 +1,5 @@
+mod utils;
+
 use std::path::Path;
 
 use anyhow::Context;
@@ -10,6 +12,7 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
 use rusty_chromaprint::{Configuration, Fingerprinter, match_fingerprints};
+use crate::utils::DurationExt;
 
 fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::Result<Vec<u32>> {
     let path = path.as_ref();
@@ -96,12 +99,17 @@ pub fn main() -> anyhow::Result<()> {
     let fp2 = calc_fingerprint(&args[2], &config)?;
 
     let segments = match_fingerprints(&fp1, &fp2, &config)?;
-    for segment in segments {
-        println!("{:0.02} -- {:0.02} | {:0.02} -- {:0.02} -> {}",
-                 segment.start1(&config),
-                 segment.end1(&config),
-                 segment.start2(&config),
-                 segment.end2(&config),
+
+    println!("  #  |          File 1          |          File 2          |  Duration  |  Score  ");
+    println!("-----+--------------------------+--------------------------+------------+---------");
+    for (idx, segment) in segments.iter().enumerate() {
+        println!("{:>4} | {} -- {} | {} -- {} | {} | {:>6.02}",
+                 idx + 1,
+                 segment.start1(&config).display_duration(),
+                 segment.end1(&config).display_duration(),
+                 segment.start2(&config).display_duration(),
+                 segment.end2(&config).display_duration(),
+                 segment.duration(&config).display_duration(),
                  segment.score,
         );
     }
