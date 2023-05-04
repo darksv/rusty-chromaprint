@@ -78,6 +78,17 @@ impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
             self.ring_buf.drain(..self.frame_size - self.frame_overlap);
         }
     }
+
+    fn flush(&mut self) {
+        if self.ring_buf.is_empty() {
+            return;
+        }
+
+        if self.ring_buf.len() < self.frame_size {
+            self.ring_buf.resize(self.frame_size, 0);
+            self.consume(&[]);
+        }
+    }
 }
 
 fn make_hamming_window(size: usize, scale: f64) -> Box<[f64]> {

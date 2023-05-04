@@ -12,6 +12,7 @@ pub struct AudioProcessor<C: AudioConsumer> {
     buffer_offset: usize,
     output_buffer: Vec<f64>,
     input: Vec<f64>,
+    output: Vec<i16>,
     channels: u32,
     consumer: C,
     target_sample_rate: u32,
@@ -25,6 +26,7 @@ impl<C: AudioConsumer> AudioProcessor<C> {
             buffer_offset: 0,
             output_buffer: Vec::new(),
             input: Vec::new(),
+            output: Vec::new(),
             channels: 0,
             consumer,
             target_sample_rate,
@@ -64,29 +66,32 @@ impl<C: AudioConsumer> AudioProcessor<C> {
         consumed * channels
     }
 
-    fn resample(&mut self) -> Result<(), ()> {
+    fn resample(&mut self, flush: bool) {
         if let Some(resampler) = self.resampler.as_mut() {
-            self.input.clear();
             for &sample in &self.buffer[..self.buffer_offset] {
                 self.input.push(f64::from(sample) / f64::from(i16::MAX));
             }
 
-            self.input.resize(resampler.input_frames_next(), 0.0);
+            let required_input = resampler.input_frames_next();
+            if self.input.len() < required_input && flush {
+                self.input.resize(required_input, 0.0);
+            }
 
-            resampler.process_into_buffer(
-                &[&self.input],
-                std::slice::from_mut(&mut self.output_buffer),
-                None,
-            ).unwrap();
-
-            self.consumer.consume(&self.output_buffer[..].iter().copied().map(|it| (it * f64::from(i16::MAX)) as i16).collect::<Vec<_>>());
-            self.output_buffer.clear();
-            self.buffer_offset = 0;
-            Ok(())
+            while self.input.len() >= required_input {
+                resampler.process_into_buffer(
+                    &[&self.input[..required_input]],
+                    std::slice::from_mut(&mut self.output_buffer),
+                    None,
+                ).unwrap();
+                self.input.drain(..required_input);
+                self.output.clear();
+                self.output.extend(self.output_buffer.drain(..).map(|it| (it * f64::from(i16::MAX)) as i16));
+                self.consumer.consume(&self.output);
+                self.buffer_offset = 0;
+            }
         } else {
             self.consumer.consume(&self.buffer[..self.buffer_offset]);
             self.buffer_offset = 0;
-            Ok(())
         }
     }
 
@@ -134,8 +139,9 @@ impl<C: AudioConsumer> AudioProcessor<C> {
 
     pub(crate) fn flush(&mut self) {
         if self.buffer_offset > 0 {
-            self.resample().unwrap();
+            self.resample(true);
         }
+        self.consumer.flush();
     }
 }
 
@@ -160,10 +166,12 @@ impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
             index += self.load(&data[index..], self.channels as usize);
             if self.buffer.len() == self.buffer_offset {
                 // Full buffer
-                self.resample().unwrap();
+                self.resample(false);
             }
         }
     }
+
+    fn flush(&mut self) {}
 }
 
 #[derive(Debug)]
@@ -246,5 +254,7 @@ mod tests {
         fn consume(&mut self, data: &[i16]) {
             self.data.extend_from_slice(data);
         }
+
+        fn flush(&mut self) {}
     }
 }

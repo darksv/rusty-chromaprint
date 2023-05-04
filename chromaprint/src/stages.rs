@@ -14,6 +14,7 @@ impl<C: Stage> Stage for &mut C {
 pub trait AudioConsumer: Stage {
     fn reset(&mut self);
     fn consume(&mut self, data: &[i16]);
+    fn flush(&mut self);
 }
 
 impl<S: Stage + ?Sized> Stage for Box<S> {
@@ -31,6 +32,10 @@ impl<C: AudioConsumer + ?Sized> AudioConsumer for Box<C> {
 
     fn consume(&mut self, data: &[i16]) {
         (**self).consume(data);
+    }
+
+    fn flush(&mut self) {
+        (**self).flush();
     }
 }
 
