@@ -7,6 +7,7 @@ license = "MIT"
 homepage = "https://github.com/darksv/rusty-chromaprint"
 repository = "https://github.com/darksv/rusty-chromaprint"
 readme = "../README.md"
+rust-version = "1.63"
 
 [dependencies]
 rustfft = "6.0.1"
