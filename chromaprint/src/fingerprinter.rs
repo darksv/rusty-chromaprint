@@ -137,7 +137,7 @@ const DEFAULT_SAMPLE_RATE: u32 = 11025;
 
 /// Calculates a fingerprint for a given audio samples.
 pub struct Fingerprinter {
-    processor: AudioProcessor<Box<dyn AudioConsumer<Output=[u32]>>>,
+    processor: AudioProcessor<Box<dyn AudioConsumer<f64, Output=[u32]>>>,
 }
 
 impl Fingerprinter {
@@ -153,7 +153,7 @@ impl Fingerprinter {
             filter,
         );
         let fft = Fft::new(config.frame_size, config.frame_overlap, chroma);
-        let processor = AudioProcessor::new(DEFAULT_SAMPLE_RATE, Box::new(fft) as Box<dyn AudioConsumer<Output=_>>);
+        let processor = AudioProcessor::new(DEFAULT_SAMPLE_RATE, Box::new(fft) as Box<dyn AudioConsumer<_, Output=_>>);
         Self { processor }
     }
 

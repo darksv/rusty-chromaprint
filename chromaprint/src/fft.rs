@@ -17,7 +17,7 @@ pub struct Fft<C: FeatureVectorConsumer> {
     fft_scratch: Box<[Complex64]>,
 
     window: Box<[f64]>,
-    ring_buf: VecDeque<i16>,
+    ring_buf: VecDeque<f64>,
 }
 
 impl<C: FeatureVectorConsumer> Fft<C> {
@@ -32,7 +32,7 @@ impl<C: FeatureVectorConsumer> Fft<C> {
             fft_scratch: vec![Complex::zero(); fft_plan.get_inplace_scratch_len()].into_boxed_slice(),
             fft_frame: vec![0.0; 1 + frame_size / 2].into_boxed_slice(),
             fft_plan,
-            window: make_hamming_window(frame_size, 1.0 / f64::from(i16::MAX)),
+            window: make_hamming_window(frame_size, 1.0),
             ring_buf: VecDeque::new(),
         }
     }
@@ -46,12 +46,12 @@ impl<C: FeatureVectorConsumer> Stage for Fft<C> {
     }
 }
 
-impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
+impl<C: FeatureVectorConsumer> AudioConsumer<f64> for Fft<C> {
     fn reset(&mut self) {
         self.consumer.reset();
     }
 
-    fn consume(&mut self, data: &[i16]) {
+    fn consume(&mut self, data: &[f64]) {
         self.ring_buf.extend(data.iter().copied());
 
         while self.ring_buf.len() >= self.frame_size {
@@ -62,7 +62,7 @@ impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
 
             for (i, (output, input))
             in self.fft_buffer_complex.iter_mut().zip(window).enumerate() {
-                output.re = f64::from(input) * self.window[i];
+                output.re = input * self.window[i];
                 output.im = 0.0;
             }
 
@@ -85,7 +85,7 @@ impl<C: FeatureVectorConsumer> AudioConsumer for Fft<C> {
         }
 
         if self.ring_buf.len() < self.frame_size {
-            self.ring_buf.resize(self.frame_size, 0);
+            self.ring_buf.resize(self.frame_size, 0.0);
             self.consume(&[]);
         }
     }

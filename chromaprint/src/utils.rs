@@ -11,6 +11,23 @@ macro_rules! assert_eq_float {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! assert_eq_float_slice {
+    ($a:expr, $b:expr) => {
+        $crate::assert_eq_float_slice!($a, $b, 0.00001);
+    };
+    ($a:expr, $b:expr, $eps:expr) => {
+        let a = $a;
+        let b = $b;
+
+        assert_eq!(a.len(), b.len());
+        for (a, b) in std::iter::zip(a, b) {
+            $crate::assert_eq_float!(a, b, $eps);
+        }
+    };
+}
+
 #[allow(unused)]
 pub(crate) fn read_s16le(path: impl AsRef<Path>) -> Vec<i16> {
     std::fs::read(path)

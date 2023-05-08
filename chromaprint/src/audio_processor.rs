@@ -7,26 +7,24 @@ use crate::stages::{AudioConsumer, Stage};
 const MIN_SAMPLE_RATE: u32 = 1000;
 const MAX_BUFFER_SIZE: usize = 1024 * 32;
 
-pub struct AudioProcessor<C: AudioConsumer> {
+pub struct AudioProcessor<C: AudioConsumer<f64>> {
     buffer: Box<[i16]>,
     buffer_offset: usize,
     output_buffer: Vec<f64>,
     input: Vec<f64>,
-    output: Vec<i16>,
     channels: u32,
     consumer: C,
     target_sample_rate: u32,
     resampler: Option<rubato::SincFixedIn<f64>>,
 }
 
-impl<C: AudioConsumer> AudioProcessor<C> {
+impl<C: AudioConsumer<f64>> AudioProcessor<C> {
     pub(crate) fn new(target_sample_rate: u32, consumer: C) -> Self {
         Self {
             buffer: vec![0; MAX_BUFFER_SIZE].into_boxed_slice(),
             buffer_offset: 0,
             output_buffer: Vec::new(),
             input: Vec::new(),
-            output: Vec::new(),
             channels: 0,
             consumer,
             target_sample_rate,
@@ -67,31 +65,30 @@ impl<C: AudioConsumer> AudioProcessor<C> {
     }
 
     fn resample(&mut self, flush: bool) {
-        if let Some(resampler) = self.resampler.as_mut() {
-            for &sample in &self.buffer[..self.buffer_offset] {
-                self.input.push(f64::from(sample) / f64::from(i16::MAX));
-            }
+        for &sample in &self.buffer[..self.buffer_offset] {
+            self.input.push(f64::from(sample) / f64::from(i16::MAX));
+        }
+        self.buffer_offset = 0;
 
+        if let Some(resampler) = self.resampler.as_mut() {
             let required_input = resampler.input_frames_next();
             if self.input.len() < required_input && flush {
                 self.input.resize(required_input, 0.0);
             }
 
             while self.input.len() >= required_input {
+                self.output_buffer.clear();
                 resampler.process_into_buffer(
                     &[&self.input[..required_input]],
                     std::slice::from_mut(&mut self.output_buffer),
                     None,
                 ).unwrap();
                 self.input.drain(..required_input);
-                self.output.clear();
-                self.output.extend(self.output_buffer.drain(..).map(|it| (it * f64::from(i16::MAX)) as i16));
-                self.consumer.consume(&self.output);
-                self.buffer_offset = 0;
+                self.consumer.consume(&self.output_buffer);
             }
         } else {
-            self.consumer.consume(&self.buffer[..self.buffer_offset]);
-            self.buffer_offset = 0;
+            self.consumer.consume(&self.input);
+            self.input.clear();
         }
     }
 
@@ -145,7 +142,7 @@ impl<C: AudioConsumer> AudioProcessor<C> {
     }
 }
 
-impl<C: AudioConsumer> Stage for AudioProcessor<C> {
+impl<C: AudioConsumer<f64>> Stage for AudioProcessor<C> {
     type Output = C::Output;
 
     fn output(&self) -> &Self::Output {
@@ -153,7 +150,7 @@ impl<C: AudioConsumer> Stage for AudioProcessor<C> {
     }
 }
 
-impl<C: AudioConsumer> AudioConsumer for AudioProcessor<C> {
+impl<C: AudioConsumer<f64>> AudioConsumer for AudioProcessor<C> {
     fn reset(&mut self) {
         todo!();
     }
@@ -201,8 +198,13 @@ impl std::error::Error for ResetError {}
 
 #[cfg(test)]
 mod tests {
+    use crate::assert_eq_float_slice;
     use crate::audio_processor::{AudioConsumer, AudioProcessor, Stage};
     use crate::utils::read_s16le;
+
+    fn i16_to_f64(s: &[i16]) -> Vec<f64> {
+        s.iter().copied().map(|x| (x as f64) / (i16::MAX as f64)).collect::<Vec<_>>()
+    }
 
     #[test]
     fn pass_through() {
@@ -211,7 +213,7 @@ mod tests {
         processor.reset(44100, 1).unwrap();
         processor.consume(&data);
         processor.flush();
-        assert_eq!(processor.output(), data);
+        assert_eq_float_slice!(processor.output(), i16_to_f64(&data));
     }
 
     #[test]
@@ -223,14 +225,14 @@ mod tests {
         processor.reset(44100, 2).unwrap();
         processor.consume(&data2);
         processor.flush();
-        assert_eq!(processor.output(), data1);
+        assert_eq_float_slice!(processor.output(), i16_to_f64(&data1));
     }
 
-    struct AudioBuffer {
-        data: Vec<i16>,
+    struct AudioBuffer<T> {
+        data: Vec<T>,
     }
 
-    impl AudioBuffer {
+    impl<T> AudioBuffer<T> {
         fn new() -> Self {
             Self {
                 data: Vec::new(),
@@ -238,20 +240,20 @@ mod tests {
         }
     }
 
-    impl Stage for AudioBuffer {
-        type Output = [i16];
+    impl<T> Stage for AudioBuffer<T> {
+        type Output = [T];
 
         fn output(&self) -> &Self::Output {
             self.data.as_slice()
         }
     }
 
-    impl AudioConsumer for AudioBuffer {
+    impl<T: Copy> AudioConsumer<T> for AudioBuffer<T> {
         fn reset(&mut self) {
             self.data.clear();
         }
 
-        fn consume(&mut self, data: &[i16]) {
+        fn consume(&mut self, data: &[T]) {
             self.data.extend_from_slice(data);
         }
 
