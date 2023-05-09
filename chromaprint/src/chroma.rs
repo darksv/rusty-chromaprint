@@ -2,11 +2,11 @@ use crate::stages::{FeatureVectorConsumer, Stage};
 
 pub(crate) struct Chroma<C: FeatureVectorConsumer> {
     interpolate: bool,
-    notes: Vec<u8>,
-    notes_frac: Vec<f64>,
+    notes: Box<[u8]>,
+    notes_frac: Box<[f64]>,
     min_index: usize,
     max_index: usize,
-    features: Vec<f64>,
+    features: [f64; NUM_BANDS],
     consumer: C,
 }
 
@@ -16,11 +16,11 @@ impl<C: FeatureVectorConsumer> Chroma<C> {
     pub(crate) fn new(min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: u32, consumer: C) -> Self {
         let mut chroma = Self {
             interpolate: false,
-            notes: vec![0; frame_size],
-            notes_frac: vec![0.0; frame_size],
+            notes: vec![0; frame_size].into_boxed_slice(),
+            notes_frac: vec![0.0; frame_size].into_boxed_slice(),
             min_index: 0,
             max_index: 0,
-            features: vec![0.0; NUM_BANDS],
+            features: [0.0; NUM_BANDS],
             consumer,
         };
         chroma.prepare_notes(min_freq, max_freq, frame_size, sample_rate);
