@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 
-use rubato::{InterpolationParameters, Resampler, ResamplerConstructionError};
+use rubato::Resampler;
 
 use crate::stages::{AudioConsumer, Stage};
 
@@ -73,18 +73,19 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
         if let Some(resampler) = self.resampler.as_mut() {
             let required_input = resampler.input_frames_next();
             if self.input.len() < required_input && flush {
+                // Add padding to the buffer to match the required number of samples.
                 self.input.resize(required_input, 0.0);
             }
 
             while self.input.len() >= required_input {
-                self.output_buffer.clear();
-                resampler.process_into_buffer(
+                self.output_buffer.resize(resampler.output_frames_next(), 0.0);
+                let (read_samples, written_samples) = resampler.process_into_buffer(
                     &[&self.input[..required_input]],
                     std::slice::from_mut(&mut self.output_buffer),
                     None,
-                ).unwrap();
-                self.input.drain(..required_input);
-                self.consumer.consume(&self.output_buffer);
+                ).expect("invalid parameters for resampler");
+                self.input.drain(..read_samples);
+                self.consumer.consume(&self.output_buffer[..written_samples]);
             }
         } else {
             self.consumer.consume(&self.input);
@@ -116,19 +117,21 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
         self.consumer.reset();
 
         if self.target_sample_rate != sample_rate {
-            self.resampler = Some(rubato::SincFixedIn::new(
+            let resampler = rubato::SincFixedIn::new(
                 self.target_sample_rate as f64 / sample_rate as f64,
                 1.0,
-                InterpolationParameters {
+                rubato::SincInterpolationParameters {
                     sinc_len: 16,
                     f_cutoff: 0.8,
                     oversampling_factor: 128,
-                    interpolation: rubato::InterpolationType::Nearest,
+                    interpolation: rubato::SincInterpolationType::Nearest,
                     window: rubato::WindowFunction::Blackman,
                 },
                 MAX_BUFFER_SIZE,
                 1,
-            )?);
+            )?;
+            self.output_buffer.resize(resampler.output_frames_max(), 0.0);
+            self.resampler = Some(resampler);
         }
 
         Ok(())
@@ -175,11 +178,11 @@ impl<C: AudioConsumer<f64>> AudioConsumer for AudioProcessor<C> {
 pub enum ResetError {
     SampleRateTooLow,
     NoChannels,
-    CannotResample(ResamplerConstructionError),
+    CannotResample(rubato::ResamplerConstructionError),
 }
 
-impl From<ResamplerConstructionError> for ResetError {
-    fn from(e: ResamplerConstructionError) -> Self {
+impl From<rubato::ResamplerConstructionError> for ResetError {
+    fn from(e: rubato::ResamplerConstructionError) -> Self {
         ResetError::CannotResample(e)
     }
 }

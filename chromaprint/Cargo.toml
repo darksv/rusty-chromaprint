@@ -1,6 +1,6 @@
 [package]
 name = "rusty-chromaprint"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Pure Rust port of Chromaprint"
 license = "MIT"
@@ -10,5 +10,5 @@ readme = "../README.md"
 rust-version = "1.63"
 
 [dependencies]
-rustfft = "6.0.1"
-rubato = "0.12.0"
+rustfft = "6.2.0"
+rubato = "0.14.1"
