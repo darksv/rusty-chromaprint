@@ -8,6 +8,7 @@ mod chroma;
 mod chroma_filter;
 mod chroma_normalizer;
 mod classifier;
+mod compression;
 mod fft;
 mod filter;
 mod fingerprint_calculator;
