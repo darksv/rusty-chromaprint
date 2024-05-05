@@ -8,7 +8,8 @@ homepage = "https://github.com/darksv/rusty-chromaprint"
 repository = "https://github.com/darksv/rusty-chromaprint"
 readme = "../README.md"
 rust-version = "1.63"
+exclude = ["data/**"]
 
 [dependencies]
 rustfft = "6.2.0"
-rubato = "0.14.1"
+rubato = "0.15.0"
