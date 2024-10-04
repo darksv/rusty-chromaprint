@@ -11,6 +11,7 @@ use crate::fingerprint_calculator::FingerprintCalculator;
 use crate::quantize::Quantizer;
 
 /// Structure containing configuration for a [Fingerprinter].
+#[derive(Debug, Clone)]
 pub struct Configuration {
     classifiers: Vec<Classifier>,
     remove_silence: bool,
