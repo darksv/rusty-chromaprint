@@ -3,6 +3,7 @@
 pub use audio_processor::ResetError;
 pub use fingerprint_matcher::{match_fingerprints, Segment, MatchError};
 pub use fingerprinter::{Configuration, Fingerprinter};
+pub use compression::FingerprintCompressor;
 
 mod audio_processor;
 mod chroma;
