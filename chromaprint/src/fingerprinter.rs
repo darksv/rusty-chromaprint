@@ -1,3 +1,4 @@
+use rustfft::num_complex::Complex;
 use crate::audio_processor::{AudioProcessor, ResetError};
 use crate::chroma::Chroma;
 use crate::chroma_filter::ChromaFilter;
@@ -127,6 +128,12 @@ impl Configuration {
     /// A duration of a single item from the fingerprint.
     pub fn item_duration_in_seconds(&self) -> f32 {
         self.samples_in_item() as f32 / self.sample_rate() as f32
+    }
+}
+
+impl Default for Configuration {
+    fn default() -> Self {
+        Self::preset_test2()
     }
 }
 
