@@ -150,6 +150,13 @@ impl Configuration {
     pub fn item_duration_in_seconds(&self) -> f32 {
         self.samples_in_item() as f32 / self.sample_rate() as f32
     }
+
+    /// Get the delay.
+    pub fn delay(&self) -> usize {
+        ((self.filter_coefficients.len() - 1) + (self.max_filter_width - 1))
+            * self.samples_in_item()
+            + self.frame_overlap
+    }
 }
 
 impl Default for Configuration {
