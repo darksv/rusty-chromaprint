@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Filter {
     kind: FilterKind,
     y: usize,
@@ -6,7 +6,7 @@ pub struct Filter {
     width: usize,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum FilterKind {
     Filter0,
     Filter1,

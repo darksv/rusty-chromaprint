@@ -11,7 +11,9 @@ use crate::fingerprint_calculator::FingerprintCalculator;
 use crate::quantize::Quantizer;
 
 /// Structure containing configuration for a [Fingerprinter].
+#[derive(Debug, Clone)]
 pub struct Configuration {
+    id: u8,
     classifiers: Vec<Classifier>,
     remove_silence: bool,
     silence_threshold: u32,
@@ -26,6 +28,7 @@ impl Configuration {
     /// Creates a new default configuration.
     fn new() -> Self {
         Self {
+            id: 0xFF,
             classifiers: Vec::new(),
             remove_silence: false,
             silence_threshold: 0,
@@ -35,6 +38,14 @@ impl Configuration {
             max_filter_width: 0,
             interpolate: false,
         }
+    }
+
+    /// Adds an ID to the configuration.
+    ///
+    /// This ID is used for fingerprint compression.
+    pub fn with_id(mut self, id: u8) -> Self {
+        self.id = id;
+        self
     }
 
     /// Adds classifiers to the configuration.
@@ -85,6 +96,7 @@ impl Configuration {
 
     pub fn preset_test1() -> Self {
         Self::new()
+            .with_id(0)
             .with_classifiers(CLASSIFIER_TEST1.into())
             .with_coefficients(CHROMA_FILTER_COEFFICIENTS.into())
             .with_interpolation(false)
@@ -94,6 +106,7 @@ impl Configuration {
 
     pub fn preset_test2() -> Self {
         Self::new()
+            .with_id(1)
             .with_classifiers(CLASSIFIER_TEST2.into())
             .with_coefficients(CHROMA_FILTER_COEFFICIENTS.into())
             .with_interpolation(false)
@@ -103,6 +116,7 @@ impl Configuration {
 
     pub fn preset_test3() -> Self {
         Self::new()
+            .with_id(2)
             .with_classifiers(CLASSIFIER_TEST3.into())
             .with_coefficients(CHROMA_FILTER_COEFFICIENTS.into())
             .with_interpolation(true)
@@ -112,11 +126,13 @@ impl Configuration {
 
     pub fn preset_test4() -> Self {
         Self::new()
+            .with_id(3)
             .with_removed_silence(50)
     }
 
     pub fn preset_test5() -> Self {
         Self::new()
+            .with_id(4)
             .with_frame_size(DEFAULT_FRAME_SIZE / 2)
             .with_frame_overlap(DEFAULT_FRAME_SIZE / 2 - DEFAULT_FRAME_SIZE / 4)
     }
@@ -125,9 +141,21 @@ impl Configuration {
         self.frame_size - self.frame_overlap
     }
 
+    /// The algorithm ID of this configuration (only used for fingerprint compression).
+    pub fn id(&self) -> u8 {
+        self.id
+    }
+
     /// A duration of a single item from the fingerprint.
     pub fn item_duration_in_seconds(&self) -> f32 {
         self.samples_in_item() as f32 / self.sample_rate() as f32
+    }
+
+    /// Get the delay.
+    pub fn delay(&self) -> usize {
+        ((self.filter_coefficients.len() - 1) + (self.max_filter_width - 1))
+            * self.samples_in_item()
+            + self.frame_overlap
     }
 }
 
