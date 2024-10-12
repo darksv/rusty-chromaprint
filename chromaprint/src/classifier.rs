@@ -1,7 +1,7 @@
 use crate::filter::{Filter, Image};
 use crate::quantize::Quantizer;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Classifier {
     filter: Filter,
     quantizer: Quantizer,
