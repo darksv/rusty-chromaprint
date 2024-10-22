@@ -92,7 +92,7 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
     best_alignments.sort_unstable_by_key(|it| Reverse(*it));
 
     let mut segments: Vec<Segment> = Vec::new();
-    for (_count, offset) in best_alignments {
+    if let Some((_count, offset)) = best_alignments.into_iter().next() {
         let offset_diff = offset as isize - fp2.len() as isize;
         let offset1 = if offset_diff > 0 { offset_diff as usize } else { 0 };
         let offset2 = if offset_diff < 0 { -offset_diff as usize } else { 0 };
@@ -155,7 +155,6 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
             }
             begin = end;
         }
-        break;
     }
 
     Ok(segments)
