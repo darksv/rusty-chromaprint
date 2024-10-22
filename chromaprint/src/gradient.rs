@@ -4,7 +4,7 @@ pub fn gradient(mut iter: impl Iterator<Item=f64>, output: &mut Vec<f64>) {
             output.push(f1 - f0);
             if let Some(mut f2) = iter.next() {
                 output.push((f2 - f0) / 2.0);
-                while let Some(next) = iter.next() {
+                for next in iter {
                     f0 = f1;
                     f1 = f2;
                     f2 = next;
