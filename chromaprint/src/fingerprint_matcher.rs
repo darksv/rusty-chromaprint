@@ -221,12 +221,12 @@ impl Segment {
 
         let new_duration = self.items_count + other.items_count;
         let new_score = (self.score * self.items_count as f64 + other.score * other.items_count as f64) / new_duration as f64;
-        return Some(Segment {
+        Some(Segment {
             offset1: self.offset1,
             offset2: self.offset2,
             items_count: new_duration,
             score: new_score,
-        });
+        })
     }
 }
 
