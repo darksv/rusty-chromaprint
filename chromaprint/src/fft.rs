@@ -77,13 +77,9 @@ impl<C: FeatureVectorConsumer> AudioConsumer<f64> for Fft<C> {
     }
 
     fn flush(&mut self) {
-        if self.ring_buf.is_empty() {
-            return;
-        }
-
         // It makes sense to pad the remaining samples with zeros and process the last frame,
         // but the reference implementation doesn't do it.
-        // if self.ring_buf.len() < self.frame_size {
+        // if !self.ring_buf.is_empty() && self.ring_buf.len() < self.frame_size {
         //     self.ring_buf.resize(self.frame_size, 0.0);
         //     self.consume(&[]);
         // }
