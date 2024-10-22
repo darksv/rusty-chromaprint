@@ -117,10 +117,8 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
         let mut gradient_peaks = Vec::new();
         for i in 0..size {
             let gi = grad[i];
-            if i > 0 && i < size - 1 && gi > 0.15 && gi >= grad[i - 1] && gi >= grad[i + 1] {
-                if gradient_peaks.is_empty() || gradient_peaks.last().unwrap() + 1 < i {
-                    gradient_peaks.push(i);
-                }
+            if i > 0 && i < size - 1 && gi > 0.15 && gi >= grad[i - 1] && gi >= grad[i + 1] && (gradient_peaks.is_empty() || gradient_peaks.last().unwrap() + 1 < i) {
+                gradient_peaks.push(i);
             }
         }
         gradient_peaks.push(size);
