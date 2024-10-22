@@ -30,7 +30,7 @@ impl Filter {
             FilterKind::Filter4 => filter4,
             FilterKind::Filter5 => filter5,
         };
-        return filter(image, x, self.y, self.width, self.height, subtract_log);
+        filter(image, x, self.y, self.width, self.height, subtract_log)
     }
 
     pub(crate) fn width(&self) -> usize {
@@ -41,7 +41,7 @@ impl Filter {
 fn subtract_log(a: f64, b: f64) -> f64 {
     let r = f64::ln((1.0 + a) / (1.0 + b));
     assert!(!r.is_nan());
-    return r;
+    r
 }
 
 pub trait Image {
@@ -61,7 +61,7 @@ fn filter0(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x, y, x + w, y + h);
     let b = 0.0;
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // ................
@@ -77,7 +77,7 @@ fn filter1(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x, y + h_2, x + w, y + h);
     let b = image.area(x, y, x + w, y + h_2);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 
@@ -94,7 +94,7 @@ fn filter2(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x + w_2, y, x + w, y + h);
     let b = image.area(x, y, x + w_2, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // .......ooooooooo
@@ -113,7 +113,7 @@ fn filter3(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let b = image.area(x, y, x + w_2, y + h_2) +
         image.area(x + w_2, y + h_2, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // ................
@@ -129,7 +129,7 @@ fn filter4(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let b = image.area(x, y, x + w, y + h_3) +
         image.area(x, y + 2 * h_3, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // .....oooooo.....
@@ -146,7 +146,7 @@ fn filter5(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let b = image.area(x, y, x + w_3, y + h) +
         image.area(x + 2 * w_3, y, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 
@@ -288,6 +288,6 @@ mod tests {
     }
 
     fn subtract(a: f64, b: f64) -> f64 {
-        return a - b;
+        a - b
     }
 }
