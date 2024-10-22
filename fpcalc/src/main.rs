@@ -433,12 +433,10 @@ impl<'a> ResultPrinter<'a> {
                     } else {
                         println!("{{\"timestamp\": {timestamp:.2}, \"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
                     }
+                } else if self.raw {
+                    println!("{{\"duration\": {duration:.2}, \"fingerprint\": [{fp}]}}");
                 } else {
-                    if self.raw {
-                        println!("{{\"duration\": {duration:.2}, \"fingerprint\": [{fp}]}}");
-                    } else {
-                        println!("{{\"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
-                    }
+                    println!("{{\"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
                 }
             }
             OutputFormat::Plain => {
