@@ -51,9 +51,8 @@ impl<C: FeatureVectorConsumer> Stage for Chroma<C> {
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     fn consume(&mut self, frame: &[f64]) {
         self.features.fill(0.0);
-        for i in self.min_index..self.max_index {
+        for (i, energy) in frame.iter().enumerate().take(self.max_index).skip(self.min_index) {
             let note = self.notes[i] as usize;
-            let energy = frame[i];
             if self.interpolate {
                 let mut note2 = note;
                 let mut a = 1.0;
