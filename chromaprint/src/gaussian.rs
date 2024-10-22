@@ -10,12 +10,12 @@ pub fn gaussian_filter<'a>(mut input: &'a mut [f64], mut output: &'a mut [f64], 
     let mut data2 = &mut output;
 
     for _ in 0..m {
-        box_filter(*data1, *data2, wl);
+        box_filter(data1, data2, wl);
         std::mem::swap(&mut data1, &mut data2);
     }
 
     for _ in m..n {
-        box_filter(*data1, *data2, wu);
+        box_filter(data1, data2, wu);
         std::mem::swap(&mut data1, &mut data2);
     }
 
