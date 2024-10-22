@@ -28,7 +28,7 @@ impl FingerprintCalculator {
         for classifier in &self.classifiers {
             bits = (bits << 2) | gray_code(classifier.classify(&self.image, offset));
         }
-        return bits;
+        bits
     }
 }
 
