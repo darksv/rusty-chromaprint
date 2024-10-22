@@ -69,12 +69,12 @@ impl RollingIntegralImage {
 
     fn row(&self, mut i: usize) -> &[f64] {
         i = i % self.max_rows;
-        return &self.data[i * self.columns..][..self.columns];
+        &self.data[i * self.columns..][..self.columns]
     }
 
     fn row_mut(&mut self, mut i: usize) -> &mut [f64] {
         i = i % self.max_rows;
-        return &mut self.data[i * self.columns..][..self.columns];
+        &mut self.data[i * self.columns..][..self.columns]
     }
 
     pub(crate) fn reset(&mut self) {
