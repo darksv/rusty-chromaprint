@@ -1,4 +1,4 @@
-pub fn gradient(mut iter: impl Iterator<Item=f64>, output: &mut Vec<f64>) {
+pub fn gradient(mut iter: impl Iterator<Item = f64>, output: &mut Vec<f64>) {
     if let Some(mut f0) = iter.next() {
         if let Some(mut f1) = iter.next() {
             output.push(f1 - f0);

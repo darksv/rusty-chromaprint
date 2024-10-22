@@ -35,11 +35,13 @@ impl<C: FeatureVectorConsumer> FeatureVectorConsumer for ChromaFilter<C> {
         self.buffer[self.buffer_offset].copy_from_slice(features);
         self.buffer_offset = (self.buffer_offset + 1) % self.buffer.len();
         if self.buffer_size >= self.coefficients.len() {
-            let offset = (self.buffer_offset + self.buffer.len() - self.coefficients.len()) % self.buffer.len();
+            let offset = (self.buffer_offset + self.buffer.len() - self.coefficients.len())
+                % self.buffer.len();
             self.result.fill(0.0);
             for i in 0..self.result.len() {
                 for j in 0..self.coefficients.len() {
-                    self.result[i] += self.buffer[(offset + j) % self.buffer.len()][i] * self.coefficients[j];
+                    self.result[i] +=
+                        self.buffer[(offset + j) % self.buffer.len()][i] * self.coefficients[j];
                 }
             }
 
@@ -93,8 +95,8 @@ mod tests {
         filter.consume(&d3);
         filter.consume(&d4);
         assert_eq!(2, image.rows());
-        assert_eq_float!(1.7, image.get(0,0));
-        assert_eq_float!(3.399999999999999,  image.get(1, 0));
+        assert_eq_float!(1.7, image.get(0, 0));
+        assert_eq_float!(3.399999999999999, image.get(1, 0));
         assert_eq_float!(10.199999999999999, image.get(0, 1));
         assert_eq_float!(11.899999999999999, image.get(1, 1));
     }

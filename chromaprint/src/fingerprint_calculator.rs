@@ -1,6 +1,6 @@
 use crate::classifier::Classifier;
-use crate::stages::{FeatureVectorConsumer, Stage};
 use crate::rolling_image::RollingIntegralImage;
+use crate::stages::{FeatureVectorConsumer, Stage};
 
 pub(crate) struct FingerprintCalculator {
     classifiers: Vec<Classifier>,
@@ -11,7 +11,11 @@ pub(crate) struct FingerprintCalculator {
 
 impl FingerprintCalculator {
     pub(crate) fn new(classifiers: Vec<Classifier>) -> Self {
-        let max_width = classifiers.iter().map(|c| c.filter().width()).max().unwrap();
+        let max_width = classifiers
+            .iter()
+            .map(|c| c.filter().width())
+            .max()
+            .unwrap();
         assert!(max_width > 0);
         assert!(max_width <= 256);
 
@@ -44,7 +48,8 @@ impl FeatureVectorConsumer for FingerprintCalculator {
     fn consume(&mut self, features: &[f64]) {
         self.image.add_row(features);
         if self.image.rows() >= self.max_filter_width {
-            self.fingerprint.push(self.calculate_subfingerprint(self.image.rows() - self.max_filter_width));
+            self.fingerprint
+                .push(self.calculate_subfingerprint(self.image.rows() - self.max_filter_width));
         }
     }
 
@@ -57,4 +62,3 @@ impl FeatureVectorConsumer for FingerprintCalculator {
 fn gray_code(i: u32) -> u32 {
     [0, 1, 3, 2][i as usize]
 }
-

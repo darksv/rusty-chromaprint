@@ -1,9 +1,9 @@
 //! Pure Rust port of [chromaprint](https://acoustid.org/chromaprint)
 
 pub use audio_processor::ResetError;
-pub use fingerprint_matcher::{match_fingerprints, Segment, MatchError};
-pub use fingerprinter::{Configuration, Fingerprinter};
 pub use compression::FingerprintCompressor;
+pub use fingerprint_matcher::{match_fingerprints, MatchError, Segment};
+pub use fingerprinter::{Configuration, Fingerprinter};
 
 mod audio_processor;
 mod chroma;

@@ -1,10 +1,17 @@
-pub fn gaussian_filter<'a>(mut input: &'a mut [f64], mut output: &'a mut [f64], sigma: f64, n: usize) {
+pub fn gaussian_filter<'a>(
+    mut input: &'a mut [f64],
+    mut output: &'a mut [f64],
+    sigma: f64,
+    n: usize,
+) {
     let w = f64::sqrt(12.0 * sigma * sigma / n as f64 + 1.0).floor() as usize;
     let wl = w - (w % 2 == 0) as usize;
     let wu = wl + 2;
 
     let fwl = wl as f64;
-    let m = ((12.0 * sigma * sigma - n as f64 * fwl * fwl - 4.0 * n as f64 * fwl - 3.0 * n as f64) / (-4.0 * fwl - 4.0)).round() as usize;
+    let m = ((12.0 * sigma * sigma - n as f64 * fwl * fwl - 4.0 * n as f64 * fwl - 3.0 * n as f64)
+        / (-4.0 * fwl - 4.0))
+        .round() as usize;
 
     let mut data1 = &mut input;
     let mut data2 = &mut output;
@@ -23,7 +30,6 @@ pub fn gaussian_filter<'a>(mut input: &'a mut [f64], mut output: &'a mut [f64], 
         output.copy_from_slice(input);
     }
 }
-
 
 fn box_filter(input: &[f64], output: &mut [f64], w: usize) {
     let size = input.len();
@@ -79,19 +85,14 @@ fn box_filter(input: &[f64], output: &mut [f64], w: usize) {
     }
 }
 
-
 struct SliceWriter<'a, T> {
     slice: &'a mut [T],
     index: usize,
 }
 
-
 impl<'a, T> SliceWriter<'a, T> {
     fn new(slice: &'a mut [T]) -> Self {
-        Self {
-            slice,
-            index: 0,
-        }
+        Self { slice, index: 0 }
     }
 
     fn push(&mut self, value: T) {
@@ -189,7 +190,6 @@ mod tests {
         assert_eq_float!(2.0, output[1]);
         assert_eq_float!(4.0, output[2]);
     }
-
 
     #[test]
     fn width2() {
