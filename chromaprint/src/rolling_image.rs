@@ -44,8 +44,8 @@ impl RollingIntegralImage {
         assert_eq!(self.columns, row.len());
 
         let mut sum = 0.0;
-        for i in 0..self.columns {
-            sum += row[i].into();
+        for (i, &cell) in row.iter().enumerate().take(self.columns) {
+            sum += cell.into();
             self.row_mut(self.rows)[i] = sum;
         }
 
