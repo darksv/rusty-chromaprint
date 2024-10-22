@@ -417,7 +417,7 @@ impl<'a> ResultPrinter<'a> {
         match self.format {
             OutputFormat::Text => {
                 if !first {
-                    println!("");
+                    println!();
                 }
 
                 if self.abs_ts {
