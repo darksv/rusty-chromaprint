@@ -1,4 +1,3 @@
-use rustfft::num_complex::Complex;
 use crate::audio_processor::{AudioProcessor, ResetError};
 use crate::chroma::Chroma;
 use crate::chroma_filter::ChromaFilter;
