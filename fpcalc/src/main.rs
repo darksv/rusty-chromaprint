@@ -109,7 +109,7 @@ impl Args {
         self.chunk.unwrap_or(0)
     }
 
-    fn to_result_printer<'a>(&'a self) -> ResultPrinter<'a> {
+    fn to_result_printer(&self) -> ResultPrinter<'_> {
         ResultPrinter {
             config: self.algorithm.as_config(),
             abs_ts: self.ts,
