@@ -47,7 +47,7 @@ fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::R
 
     let track_id = track.id;
 
-    let mut printer = Fingerprinter::new(&config);
+    let mut printer = Fingerprinter::new(config);
     let sample_rate = track.codec_params.sample_rate.context("missing sample rate")?;
     let channels = track.codec_params.channels.context("missing audio channels")?.count() as u32;
     printer.start(sample_rate, channels).context("initializing fingerprinter")?;
