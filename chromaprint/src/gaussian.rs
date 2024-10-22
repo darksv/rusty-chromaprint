@@ -122,12 +122,10 @@ impl ReflectIterator {
             } else {
                 self.pos += 1;
             }
+        } else if self.pos == 0 {
+            self.forward = true;
         } else {
-            if self.pos == 0 {
-                self.forward = true;
-            } else {
-                self.pos -= 1;
-            }
+            self.pos -= 1;
         }
     }
 
@@ -138,12 +136,10 @@ impl ReflectIterator {
             } else {
                 self.pos -= 1;
             }
+        } else if self.pos + 1 == self.size {
+            self.forward = true;
         } else {
-            if self.pos + 1 == self.size {
-                self.forward = true;
-            } else {
-                self.pos += 1;
-            }
+            self.pos += 1;
         }
     }
 
