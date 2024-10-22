@@ -41,34 +41,34 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
     }
 
     let mut offsets = Vec::with_capacity(fp1.len() + fp2.len());
-    for i in 0..fp1.len() {
-        offsets.push((align_strip(fp1[i]) << HASH_SHIFT) | (i as u32));
+    for (i, &segment) in fp1.iter().enumerate() {
+        offsets.push((align_strip(segment) << HASH_SHIFT) | (i as u32));
     }
 
-    for i in 0..fp2.len() {
-        offsets.push((align_strip(fp2[i]) << HASH_SHIFT) | (i as u32) | SOURCE_MASK);
+    for (i, &segment) in fp2.iter().enumerate() {
+        offsets.push((align_strip(segment) << HASH_SHIFT) | (i as u32) | SOURCE_MASK);
     }
     offsets.sort_unstable();
 
     let mut histogram = vec![0u32; fp1.len() + fp2.len()];
-    for offset_idx in 0..offsets.len() {
-        let hash1 = offsets[offset_idx] & HASH_MASK;
-        let offset1 = offsets[offset_idx] & OFFSET_MASK;
-        let source1 = offsets[offset_idx] & SOURCE_MASK;
+    for (offset_idx, item1) in offsets.iter().enumerate() {
+        let hash1 = item1 & HASH_MASK;
+        let offset1 = item1 & OFFSET_MASK;
+        let source1 = item1 & SOURCE_MASK;
         if source1 != 0 {
             // if we got hash from fp2, it means there is no hash from fp1,
             // because if there was, it would be first
             continue;
         }
 
-        for offset_idx2 in offset_idx + 1..offsets.len() {
-            let hash2 = offsets[offset_idx2] & HASH_MASK;
+        for item2 in offsets.iter().skip(offset_idx + 1) {
+            let hash2 = item2 & HASH_MASK;
             if hash1 != hash2 {
                 break;
             }
 
-            let offset2 = offsets[offset_idx2] & OFFSET_MASK;
-            let source2 = offsets[offset_idx2] & SOURCE_MASK;
+            let offset2 = item2 & OFFSET_MASK;
+            let source2 = item2 & SOURCE_MASK;
             if source2 != 0 {
                 let offset_diff = offset1 as usize + fp2.len() - offset2 as usize;
                 histogram[offset_diff] += 1;
@@ -110,8 +110,8 @@ pub fn match_fingerprints(fp1: &[u32], fp2: &[u32], _config: &Configuration) -> 
         let mut grad = Vec::with_capacity(size);
         gradient(smoothed_bit_counts.iter().copied(), &mut grad);
 
-        for i in 0..size {
-            grad[i] = grad[i].abs();
+        for item in grad.iter_mut().take(size) {
+            *item = item.abs();
         }
 
         let mut gradient_peaks = Vec::new();
