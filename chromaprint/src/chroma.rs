@@ -84,12 +84,12 @@ fn freq_to_index(freq: u32, frame_size: usize, sample_rate: u32) -> usize {
 }
 
 fn index_to_freq(i: usize, frame_size: usize, sample_rate: u32) -> f64 {
-    return (i as f64) * sample_rate as f64 / frame_size as f64;
+    (i as f64) * sample_rate as f64 / frame_size as f64
 }
 
 fn freq_to_octave(freq: f64) -> f64 {
     let base = 440.0 / 16.0;
-    return f64::log2(freq / base);
+    f64::log2(freq / base)
 }
 
 #[cfg(test)]
