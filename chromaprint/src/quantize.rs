@@ -18,12 +18,10 @@ impl Quantizer {
             } else {
                 1
             }
+        } else if val < self.t2 {
+            2
         } else {
-            if val < self.t2 {
-                2
-            } else {
-                3
-            }
+            3
         }
     }
 }

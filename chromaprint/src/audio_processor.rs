@@ -78,14 +78,18 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
             }
 
             while self.input.len() >= required_input {
-                self.output_buffer.resize(resampler.output_frames_next(), 0.0);
-                let (read_samples, written_samples) = resampler.process_into_buffer(
-                    &[&self.input[..required_input]],
-                    std::slice::from_mut(&mut self.output_buffer),
-                    None,
-                ).expect("invalid parameters for resampler");
+                self.output_buffer
+                    .resize(resampler.output_frames_next(), 0.0);
+                let (read_samples, written_samples) = resampler
+                    .process_into_buffer(
+                        &[&self.input[..required_input]],
+                        std::slice::from_mut(&mut self.output_buffer),
+                        None,
+                    )
+                    .expect("invalid parameters for resampler");
                 self.input.drain(..read_samples);
-                self.consumer.consume(&self.output_buffer[..written_samples]);
+                self.consumer
+                    .consume(&self.output_buffer[..written_samples]);
             }
         } else {
             self.consumer.consume(&self.input);
@@ -130,7 +134,8 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
                 MAX_BUFFER_SIZE,
                 1,
             )?;
-            self.output_buffer.resize(resampler.output_frames_max(), 0.0);
+            self.output_buffer
+                .resize(resampler.output_frames_max(), 0.0);
             self.resampler = Some(resampler);
         }
 
@@ -190,7 +195,11 @@ impl From<rubato::ResamplerConstructionError> for ResetError {
 impl Display for ResetError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResetError::SampleRateTooLow => writeln!(f, "Sample rate is too low. Required min. {}", MIN_SAMPLE_RATE),
+            ResetError::SampleRateTooLow => writeln!(
+                f,
+                "Sample rate is too low. Required min. {}",
+                MIN_SAMPLE_RATE
+            ),
             ResetError::NoChannels => writeln!(f, "At least one channel is required"),
             ResetError::CannotResample(e) => writeln!(f, "Cannot resample: {}", e),
         }
@@ -206,7 +215,10 @@ mod tests {
     use crate::utils::read_s16le;
 
     fn i16_to_f64(s: &[i16]) -> Vec<f64> {
-        s.iter().copied().map(|x| (x as f64) / (i16::MAX as f64)).collect::<Vec<_>>()
+        s.iter()
+            .copied()
+            .map(|x| (x as f64) / (i16::MAX as f64))
+            .collect::<Vec<_>>()
     }
 
     #[test]
@@ -237,9 +249,7 @@ mod tests {
 
     impl<T> AudioBuffer<T> {
         fn new() -> Self {
-            Self {
-                data: Vec::new(),
-            }
+            Self { data: Vec::new() }
         }
     }
 

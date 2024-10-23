@@ -4,15 +4,15 @@ use std::path::Path;
 
 use anyhow::Context;
 use symphonia::core::audio::SampleBuffer;
-use symphonia::core::codecs::{CODEC_TYPE_NULL, DecoderOptions};
+use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-use rusty_chromaprint::{Configuration, Fingerprinter, match_fingerprints};
 use crate::utils::DurationExt;
+use rusty_chromaprint::{match_fingerprints, Configuration, Fingerprinter};
 
 fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::Result<Vec<u32>> {
     let path = path.as_ref();
@@ -47,11 +47,19 @@ fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::R
 
     let track_id = track.id;
 
-    let mut printer = Fingerprinter::new(&config);
-    let sample_rate = track.codec_params.sample_rate.context("missing sample rate")?;
-    let channels = track.codec_params.channels.context("missing audio channels")?.count() as u32;
-    printer.start(sample_rate, channels).context("initializing fingerprinter")?;
-
+    let mut printer = Fingerprinter::new(config);
+    let sample_rate = track
+        .codec_params
+        .sample_rate
+        .context("missing sample rate")?;
+    let channels = track
+        .codec_params
+        .channels
+        .context("missing audio channels")?
+        .count() as u32;
+    printer
+        .start(sample_rate, channels)
+        .context("initializing fingerprinter")?;
 
     let mut sample_buf = None;
 
@@ -103,14 +111,15 @@ pub fn main() -> anyhow::Result<()> {
     println!("  #  |          File 1          |          File 2          |  Duration  |  Score  ");
     println!("-----+--------------------------+--------------------------+------------+---------");
     for (idx, segment) in segments.iter().enumerate() {
-        println!("{:>4} | {} -- {} | {} -- {} | {} | {:>6.02}",
-                 idx + 1,
-                 segment.start1(&config).display_duration(),
-                 segment.end1(&config).display_duration(),
-                 segment.start2(&config).display_duration(),
-                 segment.end2(&config).display_duration(),
-                 segment.duration(&config).display_duration(),
-                 segment.score,
+        println!(
+            "{:>4} | {} -- {} | {} -- {} | {} | {:>6.02}",
+            idx + 1,
+            segment.start1(&config).display_duration(),
+            segment.end1(&config).display_duration(),
+            segment.start2(&config).display_duration(),
+            segment.end2(&config).display_duration(),
+            segment.duration(&config).display_duration(),
+            segment.score,
         );
     }
 

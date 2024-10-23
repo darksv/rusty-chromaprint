@@ -19,7 +19,8 @@ impl RollingIntegralImage {
 
     #[cfg(test)]
     pub fn from_data<D>(columns: usize, data: &[D]) -> Self
-        where D: Copy + Into<f64>
+    where
+        D: Copy + Into<f64>,
     {
         let mut image = Self {
             max_rows: data.len() / columns,
@@ -35,7 +36,10 @@ impl RollingIntegralImage {
         image
     }
 
-    pub(crate) fn add_row<T>(&mut self, row: &[T]) where T: Copy + Into<f64> {
+    pub(crate) fn add_row<T>(&mut self, row: &[T])
+    where
+        T: Copy + Into<f64>,
+    {
         if self.columns == 0 {
             self.columns = row.len();
             self.data.resize(self.max_rows * self.columns, 0.0);
@@ -44,8 +48,8 @@ impl RollingIntegralImage {
         assert_eq!(self.columns, row.len());
 
         let mut sum = 0.0;
-        for i in 0..self.columns {
-            sum += row[i].into();
+        for (i, &cell) in row.iter().enumerate().take(self.columns) {
+            sum += cell.into();
             self.row_mut(self.rows)[i] = sum;
         }
 
@@ -68,13 +72,13 @@ impl RollingIntegralImage {
     }
 
     fn row(&self, mut i: usize) -> &[f64] {
-        i = i % self.max_rows;
-        return &self.data[i * self.columns..][..self.columns];
+        i %= self.max_rows;
+        &self.data[i * self.columns..][..self.columns]
     }
 
     fn row_mut(&mut self, mut i: usize) -> &mut [f64] {
-        i = i % self.max_rows;
-        return &mut self.data[i * self.columns..][..self.columns];
+        i %= self.max_rows;
+        &mut self.data[i * self.columns..][..self.columns]
     }
 
     pub(crate) fn reset(&mut self) {
@@ -129,7 +133,6 @@ mod tests {
     use crate::filter::Image;
     use crate::rolling_image::RollingIntegralImage;
 
-
     #[test]
     fn simple() {
         let mut image = RollingIntegralImage::new(4);
@@ -137,7 +140,6 @@ mod tests {
 
         assert_eq!(3, image.columns());
         assert_eq!(1, image.rows());
-
 
         assert_eq_float!(1.0, image.area(0, 0, 1, 1));
         assert_eq_float!(2.0, image.area(0, 1, 1, 2));
@@ -164,7 +166,10 @@ mod tests {
         assert_eq!(3, image.columns());
         assert_eq!(4, image.rows());
 
-        assert_eq_float!((1.0 + 2.0 + 3.0) + (4.0 + 5.0 + 6.0) + (7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0), image.area(0, 0, 4, 3));
+        assert_eq_float!(
+            (1.0 + 2.0 + 3.0) + (4.0 + 5.0 + 6.0) + (7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0),
+            image.area(0, 0, 4, 3)
+        );
 
         image.add_row(&[13, 14, 15]);
 
@@ -177,7 +182,10 @@ mod tests {
         assert_eq_float!(13.0, image.area(4, 0, 5, 1));
         assert_eq_float!(14.0, image.area(4, 1, 5, 2));
         assert_eq_float!(15.0, image.area(4, 2, 5, 3));
-        assert_eq_float!((4.0 + 5.0 + 6.0) + (7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0) + (13.0 + 14.0 + 15.0), image.area(1, 0, 5, 3));
+        assert_eq_float!(
+            (4.0 + 5.0 + 6.0) + (7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0) + (13.0 + 14.0 + 15.0),
+            image.area(1, 0, 5, 3)
+        );
 
         image.add_row(&[16, 17, 18]);
 
@@ -190,6 +198,9 @@ mod tests {
         assert_eq_float!(16.0, image.area(5, 0, 6, 1));
         assert_eq_float!(17.0, image.area(5, 1, 6, 2));
         assert_eq_float!(18.0, image.area(5, 2, 6, 3));
-        assert_eq_float!((7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0) + (13.0 + 14.0 + 15.0) + (16.0 + 17.0 + 18.0), image.area(2, 0, 6, 3));
+        assert_eq_float!(
+            (7.0 + 8.0 + 9.0) + (10.0 + 11.0 + 12.0) + (13.0 + 14.0 + 15.0) + (16.0 + 17.0 + 18.0),
+            image.area(2, 0, 6, 3)
+        );
     }
 }

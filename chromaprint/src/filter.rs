@@ -18,7 +18,12 @@ pub enum FilterKind {
 
 impl Filter {
     pub(crate) const fn new(kind: FilterKind, y: usize, height: usize, width: usize) -> Self {
-        Self { kind, y, height, width }
+        Self {
+            kind,
+            y,
+            height,
+            width,
+        }
     }
 
     pub(crate) fn apply(&self, image: &impl Image, x: usize) -> f64 {
@@ -30,7 +35,7 @@ impl Filter {
             FilterKind::Filter4 => filter4,
             FilterKind::Filter5 => filter5,
         };
-        return filter(image, x, self.y, self.width, self.height, subtract_log);
+        filter(image, x, self.y, self.width, self.height, subtract_log)
     }
 
     pub(crate) fn width(&self) -> usize {
@@ -41,7 +46,7 @@ impl Filter {
 fn subtract_log(a: f64, b: f64) -> f64 {
     let r = f64::ln((1.0 + a) / (1.0 + b));
     assert!(!r.is_nan());
-    return r;
+    r
 }
 
 pub trait Image {
@@ -61,7 +66,7 @@ fn filter0(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x, y, x + w, y + h);
     let b = 0.0;
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // ................
@@ -77,9 +82,8 @@ fn filter1(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x, y + h_2, x + w, y + h);
     let b = image.area(x, y, x + w, y + h_2);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
-
 
 // .......ooooooooo
 // .......ooooooooo
@@ -94,7 +98,7 @@ fn filter2(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let a = image.area(x + w_2, y, x + w, y + h);
     let b = image.area(x, y, x + w_2, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // .......ooooooooo
@@ -108,12 +112,10 @@ fn filter3(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let w_2 = w / 2;
     let h_2 = h / 2;
 
-    let a = image.area(x, y + h_2, x + w_2, y + h) +
-        image.area(x + w_2, y, x + w, y + h_2);
-    let b = image.area(x, y, x + w_2, y + h_2) +
-        image.area(x + w_2, y + h_2, x + w, y + h);
+    let a = image.area(x, y + h_2, x + w_2, y + h) + image.area(x + w_2, y, x + w, y + h_2);
+    let b = image.area(x, y, x + w_2, y + h_2) + image.area(x + w_2, y + h_2, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // ................
@@ -126,10 +128,9 @@ fn filter4(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let h_3 = h / 3;
 
     let a = image.area(x, y + h_3, x + w, y + 2 * h_3);
-    let b = image.area(x, y, x + w, y + h_3) +
-        image.area(x, y + 2 * h_3, x + w, y + h);
+    let b = image.area(x, y, x + w, y + h_3) + image.area(x, y + 2 * h_3, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
 
 // .....oooooo.....
@@ -143,17 +144,17 @@ fn filter5(image: &impl Image, x: usize, y: usize, w: usize, h: usize, cmp: Comp
     let w_3 = w / 3;
 
     let a = image.area(x + w_3, y, x + 2 * w_3, y + h);
-    let b = image.area(x, y, x + w_3, y + h) +
-        image.area(x + 2 * w_3, y, x + w, y + h);
+    let b = image.area(x, y, x + w_3, y + h) + image.area(x + 2 * w_3, y, x + w, y + h);
 
-    return cmp(a, b);
+    cmp(a, b)
 }
-
 
 #[cfg(test)]
 mod tests {
     use crate::assert_eq_float;
-    use crate::filter::{Filter, filter0, filter1, filter2, filter3, filter4, filter5, FilterKind, subtract_log};
+    use crate::filter::{
+        filter0, filter1, filter2, filter3, filter4, filter5, subtract_log, Filter, FilterKind,
+    };
     use crate::rolling_image::RollingIntegralImage;
 
     #[test]
@@ -170,10 +171,7 @@ mod tests {
 
     #[test]
     fn test_filter_with_filter0() {
-        let data = [
-            0.0, 1.0,
-            2.0, 3.0,
-        ];
+        let data = [0.0, 1.0, 2.0, 3.0];
         let mut integral_image = RollingIntegralImage::from_data(2, &data);
         let flt1 = Filter::new(FilterKind::Filter0, 0, 1, 1);
         assert_eq_float!(0.0, flt1.apply(&mut integral_image, 0));
@@ -182,11 +180,7 @@ mod tests {
 
     #[test]
     fn test_filter0() {
-        let data = [
-            1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0,
-        ];
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
 
@@ -208,11 +202,7 @@ mod tests {
 
     #[test]
     fn test_filter1() {
-        let data = [
-            1.0, 2.1, 3.4,
-            3.1, 4.1, 5.1,
-            6.0, 7.1, 8.0,
-        ];
+        let data = [1.0, 2.1, 3.4, 3.1, 4.1, 5.1, 6.0, 7.1, 8.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter1(&integral_image, 0, 0, 1, 1, subtract);
@@ -229,11 +219,7 @@ mod tests {
 
     #[test]
     fn test_filter2() {
-        let data = [
-            1.0, 2.0, 3.0,
-            3.0, 4.0, 5.0,
-            6.0, 7.0, 8.0,
-        ];
+        let data = [1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter2(&integral_image, 0, 0, 2, 1, subtract);
@@ -246,11 +232,7 @@ mod tests {
 
     #[test]
     fn test_filter3() {
-        let data = [
-            1.0, 2.1, 3.4,
-            3.1, 4.1, 5.1,
-            6.0, 7.1, 8.0,
-        ];
+        let data = [1.0, 2.1, 3.4, 3.1, 4.1, 5.1, 6.0, 7.1, 8.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter3(&integral_image, 0, 0, 2, 2, subtract);
@@ -263,11 +245,7 @@ mod tests {
 
     #[test]
     fn test_filter4() {
-        let data = [
-            1.0, 2.0, 3.0,
-            3.0, 4.0, 5.0,
-            6.0, 7.0, 8.0,
-        ];
+        let data = [1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter4(&integral_image, 0, 0, 3, 3, subtract);
@@ -276,11 +254,7 @@ mod tests {
 
     #[test]
     fn test_filter5() {
-        let data = [
-            1.0, 2.0, 3.0,
-            3.0, 4.0, 5.0,
-            6.0, 7.0, 8.0,
-        ];
+        let data = [1.0, 2.0, 3.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0];
 
         let integral_image = RollingIntegralImage::from_data(3, &data);
         let res = filter5(&integral_image, 0, 0, 3, 3, subtract);
@@ -288,6 +262,6 @@ mod tests {
     }
 
     fn subtract(a: f64, b: f64) -> f64 {
-        return a - b;
+        a - b
     }
 }

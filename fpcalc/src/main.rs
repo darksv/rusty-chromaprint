@@ -109,7 +109,7 @@ impl Args {
         self.chunk.unwrap_or(0)
     }
 
-    fn to_result_printer<'a>(&'a self) -> ResultPrinter<'a> {
+    fn to_result_printer(&self) -> ResultPrinter<'_> {
         ResultPrinter {
             config: self.algorithm.as_config(),
             abs_ts: self.ts,
@@ -417,7 +417,7 @@ impl<'a> ResultPrinter<'a> {
         match self.format {
             OutputFormat::Text => {
                 if !first {
-                    println!("");
+                    println!();
                 }
 
                 if self.abs_ts {
@@ -433,12 +433,10 @@ impl<'a> ResultPrinter<'a> {
                     } else {
                         println!("{{\"timestamp\": {timestamp:.2}, \"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
                     }
+                } else if self.raw {
+                    println!("{{\"duration\": {duration:.2}, \"fingerprint\": [{fp}]}}");
                 } else {
-                    if self.raw {
-                        println!("{{\"duration\": {duration:.2}, \"fingerprint\": [{fp}]}}");
-                    } else {
-                        println!("{{\"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
-                    }
+                    println!("{{\"duration\": {duration:.2}, \"fingerprint\": \"{fp}\"}}");
                 }
             }
             OutputFormat::Plain => {

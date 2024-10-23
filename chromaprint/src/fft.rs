@@ -29,7 +29,8 @@ impl<C: FeatureVectorConsumer> Fft<C> {
             frame_size,
             frame_overlap,
             fft_buffer_complex: vec![Complex64::zero(); frame_size].into_boxed_slice(),
-            fft_scratch: vec![Complex::zero(); fft_plan.get_inplace_scratch_len()].into_boxed_slice(),
+            fft_scratch: vec![Complex::zero(); fft_plan.get_inplace_scratch_len()]
+                .into_boxed_slice(),
             fft_frame: vec![0.0; 1 + frame_size / 2].into_boxed_slice(),
             fft_plan,
             window: make_hamming_window(frame_size, 1.0),
@@ -65,7 +66,8 @@ impl<C: FeatureVectorConsumer> AudioConsumer<f64> for Fft<C> {
                 output.im = 0.0;
             }
 
-            self.fft_plan.process_with_scratch(&mut self.fft_buffer_complex, &mut self.fft_scratch);
+            self.fft_plan
+                .process_with_scratch(&mut self.fft_buffer_complex, &mut self.fft_scratch);
 
             for i in 0..self.frame_size / 2 {
                 self.fft_frame[i] = self.fft_buffer_complex[i].norm_sqr();
@@ -77,13 +79,9 @@ impl<C: FeatureVectorConsumer> AudioConsumer<f64> for Fft<C> {
     }
 
     fn flush(&mut self) {
-        if self.ring_buf.is_empty() {
-            return;
-        }
-
         // It makes sense to pad the remaining samples with zeros and process the last frame,
         // but the reference implementation doesn't do it.
-        // if self.ring_buf.len() < self.frame_size {
+        // if !self.ring_buf.is_empty() && self.ring_buf.len() < self.frame_size {
         //     self.ring_buf.resize(self.frame_size, 0.0);
         //     self.consume(&[]);
         // }
@@ -93,7 +91,12 @@ impl<C: FeatureVectorConsumer> AudioConsumer<f64> for Fft<C> {
 fn make_hamming_window(size: usize, scale: f64) -> Box<[f64]> {
     let mut window = Vec::with_capacity(size);
     for i in 0..size {
-        window.push(scale * (0.54 - 0.46 * f64::cos(2.0 * std::f64::consts::PI * (i as f64) / (size as f64 - 1.0))));
+        window.push(
+            scale
+                * (0.54
+                    - 0.46
+                        * f64::cos(2.0 * std::f64::consts::PI * (i as f64) / (size as f64 - 1.0))),
+        );
     }
     window.into_boxed_slice()
 }
@@ -142,7 +145,8 @@ mod tests {
 
         let mut input = vec![0.0; frame_size + (nframes - 1) * (frame_size - overlap)];
         for i in 0..input.len() {
-            input[i] = f64::sin(i as f64 * freq as f64 * 2.0 * std::f64::consts::PI / sample_rate as f64);
+            input[i] =
+                f64::sin(i as f64 * freq as f64 * 2.0 * std::f64::consts::PI / sample_rate as f64);
         }
 
         let collector = Collector::new();

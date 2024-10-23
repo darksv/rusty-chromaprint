@@ -13,7 +13,13 @@ pub(crate) struct Chroma<C: FeatureVectorConsumer> {
 const NUM_BANDS: usize = 12;
 
 impl<C: FeatureVectorConsumer> Chroma<C> {
-    pub(crate) fn new(min_freq: u32, max_freq: u32, frame_size: usize, sample_rate: u32, consumer: C) -> Self {
+    pub(crate) fn new(
+        min_freq: u32,
+        max_freq: u32,
+        frame_size: usize,
+        sample_rate: u32,
+        consumer: C,
+    ) -> Self {
         let mut chroma = Self {
             interpolate: false,
             notes: vec![0; frame_size].into_boxed_slice(),
@@ -51,9 +57,13 @@ impl<C: FeatureVectorConsumer> Stage for Chroma<C> {
 impl<C: FeatureVectorConsumer> FeatureVectorConsumer for Chroma<C> {
     fn consume(&mut self, frame: &[f64]) {
         self.features.fill(0.0);
-        for i in self.min_index..self.max_index {
+        for (i, energy) in frame
+            .iter()
+            .enumerate()
+            .take(self.max_index)
+            .skip(self.min_index)
+        {
             let note = self.notes[i] as usize;
-            let energy = frame[i];
             if self.interpolate {
                 let mut note2 = note;
                 let mut a = 1.0;
@@ -85,12 +95,12 @@ fn freq_to_index(freq: u32, frame_size: usize, sample_rate: u32) -> usize {
 }
 
 fn index_to_freq(i: usize, frame_size: usize, sample_rate: u32) -> f64 {
-    return (i as f64) * sample_rate as f64 / frame_size as f64;
+    (i as f64) * sample_rate as f64 / frame_size as f64
 }
 
 fn freq_to_octave(freq: f64) -> f64 {
     let base = 440.0 / 16.0;
-    return f64::log2(freq / base);
+    f64::log2(freq / base)
 }
 
 #[cfg(test)]
@@ -108,10 +118,7 @@ mod tests {
         let features = chroma.output();
 
         assert_eq!(12, features.len());
-        let expected_features = [
-            1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        ];
+        let expected_features = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
         for i in 0..12 {
             assert_eq_float!(expected_features[i], features[i], 0.0001);
@@ -127,10 +134,7 @@ mod tests {
         let features = chroma.output();
 
         assert_eq!(12, features.len());
-        let expected_features = [
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-        ];
+        let expected_features = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
 
         for i in 0..12 {
             assert_eq_float!(expected_features[i], features[i], 0.0001);
@@ -146,10 +150,7 @@ mod tests {
         let features = chroma.output();
 
         assert_eq!(12, features.len());
-        let expected_features = [
-            0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-        ];
+        let expected_features = [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
         for i in 0..12 {
             assert_eq_float!(expected_features[i], features[i], 0.0001);
@@ -168,8 +169,7 @@ mod tests {
 
         assert_eq!(12, features.len());
         let expected_features = [
-            0.555242, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.444758,
+            0.555242, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.444758,
         ];
 
         for i in 0..12 {
@@ -188,8 +188,7 @@ mod tests {
 
         assert_eq!(12, features.len());
         let expected_features = [
-            0.401354, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.598646,
+            0.401354, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.598646,
         ];
 
         for i in 0..12 {
@@ -208,8 +207,7 @@ mod tests {
 
         assert_eq!(12, features.len());
         let expected_features = [
-            0.0, 0.286905, 0.713095, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.286905, 0.713095, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         ];
 
         for i in 0..12 {
@@ -223,9 +221,7 @@ mod tests {
 
     impl FeatureVectorBuffer {
         fn new() -> Self {
-            Self {
-                features: vec![],
-            }
+            Self { features: vec![] }
         }
     }
 
