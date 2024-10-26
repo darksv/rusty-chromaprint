@@ -12,4 +12,4 @@ exclude = ["data/**"]
 
 [dependencies]
 rustfft = "6.2.0"
-rubato = "0.15.0"
+rubato = "0.16.0"
