@@ -64,20 +64,27 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
         consumed * channels
     }
 
-    fn resample(&mut self, flush: bool) {
+    fn resample(&mut self, is_end: bool) {
         for &sample in &self.buffer[..self.buffer_offset] {
             self.input.push(f64::from(sample) / f64::from(i16::MAX));
         }
         self.buffer_offset = 0;
 
         if let Some(resampler) = self.resampler.as_mut() {
-            let required_input = resampler.input_frames_next();
-            if self.input.len() < required_input && flush {
-                // Add padding to the buffer to match the required number of samples.
-                self.input.resize(required_input, 0.0);
-            }
+            let default_input_frames = resampler.input_frames_next();
+            while !self.input.is_empty() {
+                if self.input.len() < resampler.input_frames_next() {
+                    if is_end {
+                        // Update chunk size to accept the remaining samples
+                        resampler
+                            .set_chunk_size(self.input.len())
+                            .expect("cannot update chunk size for the resampler");
+                    } else {
+                        break;
+                    }
+                }
 
-            while self.input.len() >= required_input {
+                let required_input = resampler.input_frames_next();
                 self.output_buffer
                     .resize(resampler.output_frames_next(), 0.0);
                 let (read_samples, written_samples) = resampler
@@ -90,6 +97,12 @@ impl<C: AudioConsumer<f64>> AudioProcessor<C> {
                 self.input.drain(..read_samples);
                 self.consumer
                     .consume(&self.output_buffer[..written_samples]);
+
+                if is_end {
+                    resampler
+                        .set_chunk_size(default_input_frames)
+                        .expect("cannot restore chunk size for the resampler");
+                }
             }
         } else {
             self.consumer.consume(&self.input);
@@ -229,6 +242,32 @@ mod tests {
         processor.consume(&data);
         processor.flush();
         assert_eq_float_slice!(processor.output(), i16_to_f64(&data));
+    }
+
+    #[test]
+    #[ignore]
+    fn mono() {
+        let data1 = read_s16le("data/test_mono_44100.raw");
+        let data2 = read_s16le("data/test_mono_11025.raw");
+
+        let mut processor = AudioProcessor::new(11025, AudioBuffer::new());
+        processor.reset(44100, 1).unwrap();
+        processor.consume(&data1);
+        processor.flush();
+        assert_eq_float_slice!(processor.output(), i16_to_f64(&data2));
+    }
+
+    #[test]
+    #[ignore]
+    fn mono_non_integer() {
+        let data1 = read_s16le("data/test_mono_44100.raw");
+        let data2 = read_s16le("data/test_mono_8000.raw");
+
+        let mut processor = AudioProcessor::new(8000, AudioBuffer::new());
+        processor.reset(44100, 1).unwrap();
+        processor.consume(&data1);
+        processor.flush();
+        assert_eq_float_slice!(processor.output(), i16_to_f64(&data2));
     }
 
     #[test]
