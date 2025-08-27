@@ -200,6 +200,8 @@ impl AudioReader {
         let channel_count = track
             .codec_params
             .channels
+            // for some codecs symphonia has "channels: None", but has a channel layout, which can be converted into channels
+            .or_else(|| track.codec_params.channel_layout.map(|v| v.into_channels()))
             .context("missing audio channels")?
             .count();
 
