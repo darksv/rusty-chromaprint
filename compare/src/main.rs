@@ -55,6 +55,8 @@ fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::R
     let channels = track
         .codec_params
         .channels
+        // for some codecs symphonia has "channels: None", but has a channel layout, which can be converted into channels
+        .or_else(|| track.codec_params.channel_layout.map(|v| v.into_channels()))
         .context("missing audio channels")?
         .count() as u32;
     printer
