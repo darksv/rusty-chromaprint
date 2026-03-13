@@ -125,11 +125,11 @@ impl Configuration {
     }
 
     pub fn preset_test4() -> Self {
-        Self::new().with_id(3).with_removed_silence(50)
+        Self::preset_test2().with_id(3).with_removed_silence(50)
     }
 
     pub fn preset_test5() -> Self {
-        Self::new()
+        Self::preset_test2()
             .with_id(4)
             .with_frame_size(DEFAULT_FRAME_SIZE / 2)
             .with_frame_overlap(DEFAULT_FRAME_SIZE / 2 - DEFAULT_FRAME_SIZE / 4)
