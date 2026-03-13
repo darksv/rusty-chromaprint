@@ -125,9 +125,7 @@ impl Configuration {
     }
 
     pub fn preset_test4() -> Self {
-        Self::preset_test2()
-            .with_id(3)
-            .with_removed_silence(50)
+        Self::preset_test2().with_id(3).with_removed_silence(50)
     }
 
     pub fn preset_test5() -> Self {
