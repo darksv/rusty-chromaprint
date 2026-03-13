@@ -65,6 +65,7 @@ fn calc_fingerprint(path: impl AsRef<Path>, config: &Configuration) -> anyhow::R
 
     let mut sample_buf = None;
 
+    #[allow(clippy::while_let_loop)]
     loop {
         let packet = match format.next_packet() {
             Ok(packet) => packet,
